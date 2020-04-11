@@ -3,7 +3,7 @@ from distutils.core import setup
 setup(
     name = 'hermes-simulator',
     packages = ['src/hermes'],
-    version = '0.1',
+    version = 'v0.1-alpha',
     license = 'GPLv3+',
     description = 'Simulator for satellite data relay systems',
     author = 'Jos van \'t Hof',
