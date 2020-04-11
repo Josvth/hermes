@@ -1,10 +1,12 @@
+from setuptools import find_packages
+
 from distutils.core import setup
 
 setup(
     name = 'hermes-simulator',
     packages = ['src/hermes'],
-    version = 'v0.1-alpha',
-    license = 'GPLv3+',
+    version = 'v0.1-beta',
+    license = 'GPL3+',
     description = 'Simulator for satellite data relay systems',
     author = 'Jos van \'t Hof',
     author_email = 'josvth@gmail.com',
@@ -15,8 +17,8 @@ setup(
                       'poliastro',
                       'scipy',
                       'astropy',
-                      'mayavi',
                       'PyQt5',
+                      #'mayavi',
                       'numba'],
     classifiers = [
                    'Development Status :: 3 - Alpha',
