@@ -1,10 +1,8 @@
-from setuptools import find_packages
-
-from distutils.core import setup
+from setuptools import setup, find_packages
 
 setup(
     name = 'hermes-simulator',
-    packages = ['src/hermes'],
+    packages = find_packages(),
     version = 'v0.1-beta',
     license = 'GPL3+',
     description = 'Simulator for satellite data relay systems',
