@@ -16,6 +16,20 @@
 
 < Some description >
 
+Installation
+============
+
+Installing Hermes is a bit tedious at the moment but the following squence of commands should make it all work:
+
+.. code-block:: bash
+
+   conda install vtk
+   conda install traits
+   pip install hermes-simulator
+
+Examples
+============
+
 .. code-block:: python
 
     from hermes.examples import O3b_example
