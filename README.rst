@@ -21,11 +21,13 @@ Installation
 
 Installing Hermes is a bit tedious at the moment but the following squence of commands should make it all work.
 
-First make a new conda enviroment using
+First make a new conda enviroment using:
 
 .. code-block:: bash
 
    conda create --name hermes_environment python=3.7
+   
+Then install as follows:
 
 .. code-block:: bash
 
