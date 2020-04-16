@@ -8,7 +8,8 @@
    :target: https://docs.poliastro.space/en/latest/?badge=latest
 
 .. |license| image:: https://img.shields.io/github/license/josvth/hermes-simulator
-
+   :target: https://github.com/josvth/hermes-simulator/raw/master/LICENSE
+   
 .. |astropy| image:: http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat-square
    :target: http://www.astropy.org/
 
