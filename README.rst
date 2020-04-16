@@ -50,6 +50,8 @@ Then start python using:
 
     python
 
+And run the example by doing:
+
 .. code-block:: python
 
     from hermes.examples import O3b_example
