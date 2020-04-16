@@ -94,11 +94,13 @@ class CelestialBody(ScenarioObject):
     def draw(self, figure):
         from tvtk.api import tvtk
 
+        import tempfile
         import urllib.request
-        urllib.request.urlretrieve("https://eoimages.gsfc.nasa.gov/images/imagerecords/73000/73909/world.topo.bathy.200412.3x5400x2700.jpg", "blue_marble.jpg")
+
+        local_filename, headers = urllib.request.urlretrieve("https://eoimages.gsfc.nasa.gov/images/imagerecords/73000/73909/world.topo.bathy.200412.3x5400x2700.jpg")
 
         img = tvtk.JPEGReader()
-        img.file_name = "blue_marble.jpg"
+        img.file_name = local_filename
 
         texture = tvtk.Texture(input_connection=img.output_port, interpolate=1)
 
