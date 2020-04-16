@@ -2,7 +2,7 @@
 
 :Name: Hermes Simulator
 :Author: Jos van 't Hof
-:Version: 0.1-beta
+:Version: 0.1.3beta
 
 .. |docs| image:: https://img.shields.io/badge/docs-latest-brightgreen.svg?style=flat-square
    :target: https://docs.poliastro.space/en/latest/?badge=latest
