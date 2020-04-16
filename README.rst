@@ -21,7 +21,7 @@ Installation
 
 Installing Hermes is a bit tedious at the moment but the following squence of commands should make it all work.
 
-First make a new conda enviroment using:
+Open the Anaconda terminal and make a new conda enviroment using:
 
 .. code-block:: bash
 
@@ -43,6 +43,12 @@ Then install as followed:
 
 Examples
 ============
+
+Then start python using:
+
+.. code-block:: bash
+
+    python
 
 .. code-block:: python
 
