@@ -27,6 +27,12 @@ First make a new conda enviroment using:
 
    conda create --name hermes_environment python=3.7
    
+And activate it using
+
+.. code-block:: bash
+
+   conda activate hermes_environment
+   
 Then install as followed:
 
 .. code-block:: bash
