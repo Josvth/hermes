@@ -1,7 +1,6 @@
 .. hermes-simulator
 
 :Name: Hermes Simulator
-:Website: https://poliastro.github.io/
 :Author: Jos van 't Hof
 :Version: 0.1-beta
 
@@ -17,21 +16,30 @@
 
 < Some description >
 
+Installation
+============
+
+Installing Hermes is a bit tedious at the moment but the following squence of commands should make it all work.
+
+First make a new conda enviroment using:
+
+.. code-block:: bash
+
+   conda create --name hermes_environment python=3.7
+   
+Then install as follows:
+
+.. code-block:: bash
+
+   conda install vtk
+   conda install traits
+   pip install hermes-simulator
+
+Examples
+============
+
 .. code-block:: python
 
     from hermes.examples import O3b_example
 
     O3b_example()
-
-
-Installation
-============
-
-The easiest and fastest way to get the package up and running is to
-install the hermes simulator is using `conda <http://conda.io>`_::
-
-  $ conda install poliastro --channel conda-forge
-
-Please check out the `documentation for alternative installation methods`_.
-
-.. _`documentation for alternative installation methods`: https://docs.poliastro.space/en/latest/getting_started.html#alternative-installation-methods
