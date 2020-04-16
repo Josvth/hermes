@@ -4,13 +4,13 @@
 :Author: Jos van 't Hof
 :Version: 0.1.3beta
 
-.. |docs| image:: https://img.shields.io/badge/docs-latest-brightgreen.svg?style=flat-square
+.. |docs| image:: https://img.shields.io/badge/docs-latest-brightgreen.svg?style=flat
    :target: https://docs.poliastro.space/en/latest/?badge=latest
 
 .. |license| image:: https://img.shields.io/github/license/josvth/hermes-simulator
    :target: https://github.com/josvth/hermes-simulator/raw/master/LICENSE
    
-.. |astropy| image:: http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat-square
+.. |astropy| image:: http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat
    :target: http://www.astropy.org/
 
 |docs| |license| |astropy|
