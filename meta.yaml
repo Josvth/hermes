@@ -1,0 +1,45 @@
+{% set name = "hermes-simulator" %}
+{% set version = "0.1.2b0" %}
+
+package:
+  name: "{{ name|lower }}"
+  version: "{{ version }}"
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 38d7d5477523ed1c04933ddc8a9a3f65257a3f1445ff39edc915ae5b16729255
+
+build:
+  number: 0
+  script: "{{ PYTHON }} -m pip install . -vv"
+
+requirements:
+  host:
+    - python
+    - pip
+    - poliastro
+    - pyqt
+    - mayavi
+  run:
+    - python
+    - pip
+    - poliastro
+    - pyqt
+    - mayavi
+
+test:
+  imports:
+    - hermes.examples
+
+about:
+  home: "https://github.com/Josvth/hermes-simulator"
+  license: GPL-3.0-only
+  license_family: GPL
+  license_file: LICENSE
+  summary: "Simulator for satellite data relay systems"
+  doc_url: 
+  dev_url: 
+
+extra:
+  recipe-maintainers:
+    - josvth

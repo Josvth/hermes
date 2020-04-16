@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from itertools import chain
 
 from mayavi import mlab
-from poliastro.bodies import Body, _Earth, _Body
+import poliastro
 from poliastro.frames import Planes
 from poliastro.twobody import Orbit
 from poliastro.twobody.propagation import *
@@ -20,8 +20,9 @@ TUBE_RADIUS = 15.
 
 J2000 = time.Time('J2000', scale='utc')
 
+
 # PROP_METHOD = mean_motion   # Takes about 84s to do 6000 seconds
-PROP_METHOD = markley  # Takes about 75s to do 6000 seconds
+# PROP_METHOD = markley  # Takes about 75s to do 6000 seconds
 
 
 class ScenarioObject(ABC):
@@ -59,12 +60,13 @@ class ScenarioObject(ABC):
         pass
 
 
-class CelestialBody(_Body, ScenarioObject, ABC):
+class CelestialBody(ScenarioObject):
 
-    def __init__(self):
+    def __init__(self, body):
         self.tof_last = None
         self.sphere_actor = None
         self.rotation = 0 * u.deg
+        self.poli_body = body
         super().__init__()
 
     # Todo implement
@@ -80,21 +82,23 @@ class CelestialBody(_Body, ScenarioObject, ABC):
         pass
 
     def propagate_to(self, t):
-
         if self.tof_last is None:
             self.tof_last = t
             return
 
         dt = t - self.tof_last
         self.tof_last = t
-        drot = dt.to(u.s) * 360 * u.deg / self.rotational_period.to(u.s)
+        drot = dt.to(u.s) * 360 * u.deg / (86164.09 * u.s)  # Todo, make less hardcoded
         self.rotation = (self.rotation + drot) % (360 * u.deg)
 
     def draw(self, figure):
         from tvtk.api import tvtk
 
+        import urllib.request
+        urllib.request.urlretrieve("https://eoimages.gsfc.nasa.gov/images/imagerecords/73000/73909/world.topo.bathy.200412.3x5400x2700.jpg", "blue_marble.jpg")
+
         img = tvtk.JPEGReader()
-        img.file_name = "D:/git/thesis/mmWaveISL/mmWaveISL/blue_marble.jpg"
+        img.file_name = "blue_marble.jpg"
 
         texture = tvtk.Texture(input_connection=img.output_port, interpolate=1)
 
@@ -102,7 +106,7 @@ class CelestialBody(_Body, ScenarioObject, ABC):
         Nrad = 180
 
         # create the sphere source with a given radius and angular resolution
-        sphere = tvtk.TexturedSphereSource(radius=self.R_mean.to(u.km).value, theta_resolution=Nrad,
+        sphere = tvtk.TexturedSphereSource(radius=self.poli_body.R_mean.to(u.km).value, theta_resolution=Nrad,
                                            phi_resolution=Nrad)
 
         # assemble rest of the pipeline, assign texture
@@ -115,12 +119,12 @@ class CelestialBody(_Body, ScenarioObject, ABC):
         pass
 
 
-class _EarthObject(CelestialBody, _Earth):
+class _EarthObject(CelestialBody):
+
     plot_color = '#0e4a5b'
 
     def __init__(self):
-        super().__init__()
-
+        super().__init__(poliastro.bodies.Earth)
 
 
 Earth = _EarthObject()
@@ -142,7 +146,7 @@ class ObjectOrbit(Orbit, ScenarioObject):
 
     def propagate_to(self, t):
         # Todo it would be real nice if this could be done pointer wise
-        self._xyz = propagate(self, t, method=PROP_METHOD)._xyz[0]
+        self._xyz = propagate(self, t)._xyz[0]
 
         # k = self.attractor.k.to(u.m ** 3 / u.s ** 2).value
         # tt = t.to(u.s).value
@@ -161,7 +165,6 @@ class ObjectOrbit(Orbit, ScenarioObject):
         pass
 
     def draw(self, figure):
-
         if self.orbit_points is None:
             pos = self.sample()
 
@@ -193,7 +196,6 @@ class GroupNode(ABC):
 
 
 class Satellite(ObjectOrbit, GroupNode):
-
     fov = 45 * u.deg  # Nadir pointing FOV
 
     def __init__(self, state, epoch, plane):
@@ -281,7 +283,7 @@ class SatGroup(GroupNode, MutableSequence):
         length = len(self)
         self.xyz_in_m = np.zeros((length, 3))
         # Todo make Earth less hard coded
-        self.k = Earth.k.to(u.m ** 3 / u.s ** 2).value
+        self.k = Earth.poli_body.k.to(u.m ** 3 / u.s ** 2).value
 
         self.pp = np.zeros(length)
         self.eecc = np.zeros(length)
@@ -320,7 +322,7 @@ class SatGroup(GroupNode, MutableSequence):
         # self.xyz_in_m = coe2xyz_fast(self.pp, self.eecc, self.ll1, self.mm1, self.nn1, self.ll2, self.mm2, self.nn2,
         #                              nnu)
         coe2xyz_fast(self.xyz_in_m, self.pp, self.eecc, self.ll1, self.mm1, self.nn1, self.ll2, self.mm2, self.nn2,
-                                     nnu)
+                     nnu)
 
     def draw(self, figure):
 
@@ -350,7 +352,7 @@ class SatGroup(GroupNode, MutableSequence):
         if self.sat_points is None:
             x, y, z = self.get_mayavi_xyz()
             self.sat_points = mlab.points3d(x, y, z, np.arange(len(self)), figure=figure, scale_mode='none',
-                                        scale_factor=SCALE_FACTOR)
+                                            scale_factor=SCALE_FACTOR)
             # self.sat_points.glyph.color_mode = 'color_by_scalar'  # Color by scalar
             self.sat_points.module_manager.scalar_lut_manager.lut.number_of_colors = len(self)
             self.sat_points.module_manager.scalar_lut_manager.lut.table = self.colors
@@ -454,7 +456,8 @@ class SatGroup(GroupNode, MutableSequence):
         group._group_type = "set"
 
         for i_p in range(n_plane):
-            group_plane = cls.as_plane(attractor, a, ecc, inc, rraan[i_p], aargp[i_p], np.squeeze(nnnu[i_p]), epoch, plane)
+            group_plane = cls.as_plane(attractor, a, ecc, inc, rraan[i_p], aargp[i_p], np.squeeze(nnnu[i_p]), epoch,
+                                       plane)
             group_plane.parent = group
             # Todo do parenting in append?
             group.append(group_plane)

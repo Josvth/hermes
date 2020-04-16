@@ -46,6 +46,8 @@ def markley_bulk(k, tof, pp, eecc, iinc, rraan, aargp, nnu0):
     # if eecc.max() >= 1:
     # raise ValueError("All eccentricities must be smaller than 1")
 
+    # These only hold for all eecc < 1
+    # Todo try to wrap nu_to_M in a njit or something (maybe just a regular for loop)
     EE = nu_to_E(nnu0, eecc)
     MM0 = E_to_M(EE, eecc)
 

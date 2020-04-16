@@ -132,7 +132,7 @@ class AccessAnalysis(Analysis):
 
         # Check if line of sight is within fov and does not intersect
         itsc = line_intersects_sphere(self.r_a, self.rr_b, self.scenario.body.xyz,
-                                      self.scenario.body.R_mean.to(u.m).value)
+                                      self.scenario.body.poli_body.R_mean.to(u.m).value)
         if self.audacy:
             insd = point_inside_cone_audacy(self.r_a, self.rr_b, self.fovs)
         else:
