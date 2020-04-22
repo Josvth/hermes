@@ -15,8 +15,6 @@
 
 |docs| |license| |astropy|
 
-< Some description >
-
 Installation
 ============
 
