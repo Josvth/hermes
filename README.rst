@@ -2,32 +2,37 @@
 
 :Name: Hermes Simulator
 :Author: Jos van 't Hof
-:Version: 0.1-beta
+:Version: 0.1.3beta
 
-.. |docs| image:: https://img.shields.io/badge/docs-latest-brightgreen.svg?style=flat-square
+.. |docs| image:: https://img.shields.io/badge/docs-latest-brightgreen.svg?style=flat
    :target: https://docs.poliastro.space/en/latest/?badge=latest
 
 .. |license| image:: https://img.shields.io/github/license/josvth/hermes-simulator
-
-.. |astropy| image:: http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat-square
+   :target: https://github.com/josvth/hermes-simulator/raw/master/LICENSE
+   
+.. |astropy| image:: http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat
    :target: http://www.astropy.org/
 
 |docs| |license| |astropy|
-
-< Some description >
 
 Installation
 ============
 
 Installing Hermes is a bit tedious at the moment but the following squence of commands should make it all work.
 
-First make a new conda enviroment using:
+Open the Anaconda terminal and make a new conda enviroment using:
 
 .. code-block:: bash
 
    conda create --name hermes_environment python=3.7
    
-Then install as follows:
+And activate it using:
+
+.. code-block:: bash
+
+   conda activate hermes_environment
+   
+Then install as followed:
 
 .. code-block:: bash
 
@@ -37,6 +42,14 @@ Then install as follows:
 
 Examples
 ============
+
+Then start python using:
+
+.. code-block:: bash
+
+    python
+
+And run the example by doing:
 
 .. code-block:: python
 
