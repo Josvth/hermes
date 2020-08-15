@@ -112,9 +112,9 @@ class Scenario(object):
             self.step(animate)
             print("t=%2.1f s (%5.3f ms)" % (self.t[i], (timer() - t_sim_step) * 1000))
 
-            if not follow is None:
-                mlab.view(azimuth=np.mod(
-                    -20 + np.arctan2(follow._xyz[1].to(u.km).value, follow._xyz[0].to(u.km).value) * 180 / np.pi, 360))
+            # if follow is not None:
+            #     mlab.view(azimuth=np.mod(
+            #         -20 + np.arctan2(follow._xyz[1].to(u.km).value, follow._xyz[0].to(u.km).value) * 180 / np.pi, 360))
 
             yield
             # if animate:

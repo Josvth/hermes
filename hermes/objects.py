@@ -15,8 +15,8 @@ from hermes.propagation_bulk import markley_bulk
 from hermes.util import calc_lmn, coe2xyz_fast, hex2rgb
 from collections import MutableSequence
 
-SCALE_FACTOR = 150
-TUBE_RADIUS = 15.
+SCALE_FACTOR = 100
+TUBE_RADIUS = 10.
 
 J2000 = time.Time('J2000', scale='utc')
 
