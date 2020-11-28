@@ -11,7 +11,7 @@ setup(
     url = 'https://github.com/Josvth/hermes-simulator',
     download_url = 'https://github.com/Josvth/hermes-simulator/archive/v0.1.2beta.tar.gz',
     keywords = ['data', 'relay', 'satellite'],
-    install_requires=['poliastro',
+    install_requires=['poliastro==0.13.0',
                       'PyQt5',
                       'mayavi'],
     classifiers = [

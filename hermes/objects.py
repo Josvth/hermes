@@ -96,8 +96,27 @@ class CelestialBody(ScenarioObject):
 
         import tempfile
         import urllib.request
+        from pathlib import Path
 
-        local_filename, headers = urllib.request.urlretrieve("https://eoimages.gsfc.nasa.gov/images/imagerecords/73000/73909/world.topo.bathy.200412.3x5400x2700.jpg")
+        local_filename = Path("/hermes_temp/blue_marble.jpg")
+        if not local_filename.is_file():
+
+            local_filename.parent.mkdir(parents=True, exist_ok=True)
+
+            print("Downloading Earth")
+
+            from tqdm import tqdm
+            dbar = tqdm(leave=False)
+            def download_bar(count, block_size, total_size):
+                dbar.total = total_size
+                dbar.update(block_size)
+
+            local_filename, headers = urllib.request.urlretrieve(
+                "https://eoimages.gsfc.nasa.gov/images/imagerecords/73000/73909/world.topo.bathy.200412.3x5400x2700.jpg",
+                "/hermes_temp/blue_marble.jpg",
+                reporthook=download_bar)
+        else:
+            local_filename = str(local_filename)
 
         img = tvtk.JPEGReader()
         img.file_name = local_filename
@@ -115,6 +134,7 @@ class CelestialBody(ScenarioObject):
         sphere_mapper = tvtk.PolyDataMapper(input_connection=sphere.output_port)
         self.sphere_actor = tvtk.Actor(mapper=sphere_mapper, texture=texture)
         figure.scene.add_actor(self.sphere_actor)
+        #print("Finished loading Earth")
 
     def draw_update(self, figure):
         self.sphere_actor.orientation = [0, 0, self.rotation.to(u.deg).value]
@@ -167,7 +187,7 @@ class ObjectOrbit(Orbit, ScenarioObject):
         pass
 
     def draw(self, figure):
-        if self.orbit_points is None:
+        #if self.orbit_points is None:
             pos = self.sample()
 
             self.orbit_points = mlab.plot3d(pos.x, pos.y, pos.z, color=self.plot_color, tube_radius=TUBE_RADIUS)

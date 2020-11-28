@@ -3,13 +3,13 @@ import traceback
 from builtins import object, enumerate
 from timeit import default_timer as timer
 
+import astropy
 from mayavi import mlab
 
 from hermes.objects import SatGroup
 
 import numpy as np
-from astropy import time, units as u
-
+from astropy import units as u
 
 class Scenario(object):
 
@@ -108,8 +108,11 @@ class Scenario(object):
 
         for i, tof in enumerate(self._tof_vector):
             t_sim_step = timer()
+
+            self.figure.scene.disable_render = True
             self.tof_current = tof
             self.step(animate)
+            self.figure.scene.disable_render = False
             print("t=%2.1f s (%5.3f ms)" % (self.t[i], (timer() - t_sim_step) * 1000))
 
             # if follow is not None:
@@ -126,8 +129,19 @@ class Scenario(object):
     def animate(self, follow=None, t_start=None, t_stop=None, t_delta=None):
         try:
             yield from self.simulate(t_start, t_stop, t_delta, animate=True, follow=follow)
-        except Exception:
+        except Exception as e:
+            print(e)
             traceback.print_exc(file=sys.stdout)
+
+    def animate_notebook(self, follow=None, t_start=None, t_stop=None, t_delta=None):
+        import time
+        t = time.time()
+        rate = 0.02
+        for value in self.simulate(t_start, t_stop, t_delta, animate=True, follow=follow):
+            wait_time = (t + rate) - time.time()
+            if wait_time > 0:
+                time.sleep(wait_time)
+            t = time.time()
 
     def _generate_time_vector(self, start, stop, delta):
 
@@ -145,13 +159,13 @@ class Scenario(object):
         dt = stop - start
 
         self.t = np.arange(0, dt.to(u.s).value, delta.to(u.s).value)
-        self._tof_vector = time.TimeDelta(self.t * u.s)
+        self._tof_vector = astropy.time.TimeDelta(self.t * u.s)
 
         # Use the highest precision we can afford
         # np.atleast_1d does not work directly on TimeDelta objects
         jd1 = np.atleast_1d(self._tof_vector.jd1)
         jd2 = np.atleast_1d(self._tof_vector.jd2)
-        self._tof_vector = time.TimeDelta(jd1, jd2, format="jd", scale=self._tof_vector.scale)
+        self._tof_vector = astropy.time.TimeDelta(jd1, jd2, format="jd", scale=self._tof_vector.scale)
 
     def draw_frame(self):
 

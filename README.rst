@@ -18,6 +18,37 @@
 Installation
 ============
 
+Improved install (Windows)
+--------------------------
+
+1. Install "Build tools for Visual studio"
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1. Go to the `Visual studio download page <https://visualstudio.microsoft.com/downloads/>`_
+2. Scroll down and open the "Tools for Visual Studio 2019" drop down
+3. Download "Build Tools for Visual Studio 2019"
+4. Open executable and follow installation instructions
+5. Make sure to install the  'Windows 10 SDK', 'Visual C++ tools for CMake' and 'MSVC'
+6. Restart computer
+
+2. Install hermes-simulator from source
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1. Clone the git repository
+
+.. code-block:: bash
+
+    git clone https://github.com/Josvth/hermes-simulator.git
+
+2. While in the cloned directory type the following command
+
+.. code-block:: bash
+
+    pip install hermes-simulator
+
+.. note::   If you intend to modify/improve hermes-simulator I recommend installing using the '-e' (development mode) option
+
+Original install
+----------------
+
 Installing Hermes is a bit tedious at the moment but the following squence of commands should make it all work.
 
 Open the Anaconda terminal and make a new conda enviroment using:

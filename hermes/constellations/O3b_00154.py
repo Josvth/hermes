@@ -4,7 +4,7 @@ import numpy as np
 from astropy import time, units as u
 
 # Based off SAT-AMD-2017110900154
-def _O3b():
+def _O3b_00154():
     inc_plane1 = SatPlane.as_plane(
         Earth.poli_body,
         a=Earth.poli_body.R_mean + 8062 * u.km, ecc=0 * u.one, inc=70 * u.deg,
@@ -39,6 +39,6 @@ def _O3b():
 
     return constellation
 
-O3b = _O3b()
+O3b_00154 = _O3b_00154()
 
 
