@@ -11,7 +11,9 @@ from scipy.constants import kilo
 from astropy import time, units as u
 import numpy as np
 
-from hermes.propagation_bulk import markley_bulk
+from hermes import visualisation
+from hermes.propagation import markley_coe
+
 from hermes.util import calc_lmn, coe2xyz_fast, hex2rgb
 from collections import MutableSequence
 
@@ -127,7 +129,7 @@ class CelestialBody(ScenarioObject):
         Nrad = 180
 
         # create the sphere source with a given radius and angular resolution
-        sphere = tvtk.TexturedSphereSource(radius=self.poli_body.R_mean.to(u.km).value, theta_resolution=Nrad,
+        sphere = tvtk.TexturedSphereSource(radius=self.poli_body.R_mean.to(visualisation.SCALE_UNIT).value, theta_resolution=Nrad,
                                            phi_resolution=Nrad)
 
         # assemble rest of the pipeline, assign texture
@@ -154,10 +156,10 @@ Earth = _EarthObject()
 
 class ObjectOrbit(Orbit, ScenarioObject):
 
-    def __init__(self, state, epoch, plane):
+    def __init__(self, state, epoch):
         self.plot_color = hex2rgb('#ffffff')
         self.orbit_points = None
-        super().__init__(state, epoch, plane)
+        super().__init__(state, epoch)
 
     # Abstract implementations
     def __len__(self):
@@ -189,8 +191,10 @@ class ObjectOrbit(Orbit, ScenarioObject):
     def draw(self, figure):
         #if self.orbit_points is None:
             pos = self.sample()
-
-            self.orbit_points = mlab.plot3d(pos.x, pos.y, pos.z, color=self.plot_color, tube_radius=TUBE_RADIUS)
+            x = pos.x.to(visualisation.SCALE_UNIT)
+            y = pos.y.to(visualisation.SCALE_UNIT)
+            z = pos.z.to(visualisation.SCALE_UNIT)
+            self.orbit_points = mlab.plot3d(x, y, z, color=self.plot_color, tube_radius=TUBE_RADIUS)
 
     def draw_update(self, figure):
         pass
@@ -220,8 +224,8 @@ class GroupNode(ABC):
 class Satellite(ObjectOrbit, GroupNode):
     fov = 45 * u.deg  # Nadir pointing FOV
 
-    def __init__(self, state, epoch, plane):
-        super().__init__(state, epoch, plane)
+    def __init__(self, state, epoch):
+        super().__init__(state, epoch)
         self._xyz = self.r  # set the initial position
         self.pos_points = None
 
@@ -334,7 +338,7 @@ class SatGroup(GroupNode, MutableSequence):
     def propagate_to(self, t):
 
         # propagate at once
-        nnu = markley_bulk(self.k, t.to(u.s).value, self.pp, self.eecc, self.iinc, self.rraan, self.aargp, self.nnu0)
+        nnu = markley_coe(self.k, self.pp, self.eecc, None, None, None, self.nnu0, t.to(u.s).value)
 
         import numpy.ctypeslib as nc
         # self._xyz, vv = coe2rv(self.k, self.pp, self.eecc, self.iinc, self.rraan, self.aargp, nnu)
@@ -373,11 +377,14 @@ class SatGroup(GroupNode, MutableSequence):
 
         if self.sat_points is None:
             x, y, z = self.get_mayavi_xyz()
+
             self.sat_points = mlab.points3d(x, y, z, np.arange(len(self)), figure=figure, scale_mode='none',
-                                            scale_factor=SCALE_FACTOR)
-            # self.sat_points.glyph.color_mode = 'color_by_scalar'  # Color by scalar
-            self.sat_points.module_manager.scalar_lut_manager.lut.number_of_colors = len(self)
-            self.sat_points.module_manager.scalar_lut_manager.lut.table = self.colors
+                                            scale_factor=SCALE_FACTOR, color=tuple(self.colors[0, 0:3] / 255))
+
+            if len(self) > 1:
+                self.sat_points.module_manager.scalar_lut_manager.lut.number_of_colors = len(self.colors)
+                self.sat_points.module_manager.scalar_lut_manager.lut.table = self.colors
+
             mlab.draw()
         else:
             x, y, z = self.get_mayavi_xyz()
@@ -467,7 +474,6 @@ class SatGroup(GroupNode, MutableSequence):
             Fundamental plane of the frame.
         """
 
-        # Todo add check for sizes rraan, aargp and nnnu
         if len({len(rraan), len(aargp), len(nnnu)}) != 1:
             raise ValueError("Size of rraan, aargp and nnnu should be identical. Currently (%d,%d,%d)" % (
                 len(rraan), len(aargp), len(nnnu)))

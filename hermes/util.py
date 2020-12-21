@@ -112,6 +112,7 @@ def coe2xyz(pp, eecc, iinc, rraan, aargp, nnu):
     return coe2xyz_fast(pp, eecc, calc_lmn(iinc, rraan, aargp), nnu)
 
 import numpy.ctypeslib as nc
+@jit
 def coe2xyz_fast(xyz, pp, eecc, ll1, mm1, nn1, ll2, mm2, nn2, nnu):
 
     cos_nnu = cos(nnu)

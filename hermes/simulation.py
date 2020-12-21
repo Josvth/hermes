@@ -11,6 +11,8 @@ from hermes.objects import SatGroup
 import numpy as np
 from astropy import units as u
 
+SIMULATION_SCALE = u.km
+
 class Scenario(object):
 
     def __init__(self, body, t_start, t_stop, t_step, epoch=None, figure=None):
@@ -114,11 +116,10 @@ class Scenario(object):
             self.step(animate)
             self.figure.scene.disable_render = False
             print("t=%2.1f s (%5.3f ms)" % (self.t[i], (timer() - t_sim_step) * 1000))
-
+            self.figure.scene.render()
             # if follow is not None:
             #     mlab.view(azimuth=np.mod(
             #         -20 + np.arctan2(follow._xyz[1].to(u.km).value, follow._xyz[0].to(u.km).value) * 180 / np.pi, 360))
-
             yield
             # if animate:
             #     yield

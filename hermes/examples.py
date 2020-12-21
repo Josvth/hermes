@@ -1,3 +1,6 @@
+import os
+
+
 def O3b_example():
 
     from hermes.simulation import Scenario
@@ -74,29 +77,58 @@ def Telesat_example():
 
     # Also add the constellation
     constellation = Telesat_00053
-    scenario.add_satellite(constellation)
+    #scenario.add_satellite(constellation)
 
     # Add analysis
-    an = AccessAnalysis(scenario, sat1, constellation)
-    scenario.add_analysis(an)
+    #an = AccessAnalysis(scenario, sat1, constellation)
+    #scenario.add_analysis(an)
 
     # Initizalize scenario
     scenario.initialize()
 
     # Start animation
     scenario.draw_scenario()
+    #scenario.draw_frame()
+
+    import numpy as np
+
+    """Generates a pretty set of lines."""
+    n_mer, n_long = 6, 11
+    dphi = np.pi / 1000.0
+    phi = np.arange(0.0, 2 * np.pi + 0.5 * dphi, dphi)
+    mu = phi * n_mer
+    x = np.cos(mu) * (1 + np.cos(n_long * mu / n_mer) * 0.5) * 10000
+    y = np.sin(mu) * (1 + np.cos(n_long * mu / n_mer) * 0.5) * 10000
+    z = np.sin(n_long * mu / n_mer) * 0.5 * 10000
+
+    l = mlab.plot3d(x, y, z, np.sin(mu), tube_radius=25, colormap='Spectral')
 
     scenario.step()  # do one step to let numba compile
+    # from tvtk.tools import visual
+    # visual.set_viewer(fig)
 
+    # from pyface.timer.api import Timer
 
-    scenario.animate(scenario)
+    #animator = scenario.simulate()
+    #t = Timer(250, animator.next)
 
-    import time
-    time.sleep(3)
+    for value in scenario.simulate(animate=False):
+        pass
 
+    scenario.animate()
     mlab.show()
+    #import time
+    #time.sleep(3)
 
-    # # Manual animation
+    # import multiprocessing
+    #
+    # print('before')
+    # process = multiprocessing.Process(target=mlab.show())
+    # process.start()
+    # print('after')
+    #
+    # def animation_worker():
+    #
     # import time
     # t = time.time()
     # rate = 1.
