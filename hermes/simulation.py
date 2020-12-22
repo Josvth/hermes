@@ -13,6 +13,7 @@ from astropy import units as u
 
 SIMULATION_SCALE = u.km
 
+
 class Scenario(object):
 
     def __init__(self, body, t_start, t_stop, t_step, epoch=None, figure=None):

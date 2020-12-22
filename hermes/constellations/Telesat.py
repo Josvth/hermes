@@ -1,4 +1,4 @@
-from hermes.objects import Satellite, Earth, Constellation, SatSet, SatPlane
+from hermes.objects import Satellite, Earth, Constellation, SatGroup, SatPlane
 
 import numpy as np
 from astropy import time, units as u
@@ -19,7 +19,7 @@ def _Telesat_00053():
     # [37, 39, ..., 43, 2, 4, ..., 42, 1, 3, ..., 19]
     num_plane = 27  # number of planes
     num_sat = 13  # number of satellites per plane
-    set_polar = SatSet.as_set(Earth.poli_body,
+    set_polar = SatGroup.as_set(Earth.poli_body,
                                 a=Earth.poli_body.R_mean + 1015 * u.km, ecc=0 * u.one, inc=99.0 * u.deg,
                                 rraan=np.mod(np.arange(0, num_plane) * 360.0 / num_plane * 2, 360.0) * u.deg,
                                 aargp=np.repeat(0 * u.deg, num_plane),
@@ -28,8 +28,8 @@ def _Telesat_00053():
                                                 np.tile(np.arange(0, num_plane) * 1.025, (num_sat, 1)).T, 360),
                                     num_plane) * u.deg,
                                 epoch=J2017)
-    set_polar.set_color("#0074D9")  # Blue
-    set_polar.set_fov(44.85 * u.deg)
+    set_polar.color = "#0074D9"  # Blue
+    #set_polar.set_fov(44.85 * u.deg)
 
     # 40 planes (@ 1325 km, 50.88 degree, 33 sats/plane)
     # RAAN[0] = 0, delta_RAAN = 360 / 40
@@ -39,7 +39,7 @@ def _Telesat_00053():
     # Note: to let the code make more sense indexes match schedule planes as:
     num_plane = 40  # number of planes
     num_sat = 33  # number of satellites per plane
-    set_inc = SatSet.as_set(Earth.poli_body,
+    set_inc = SatGroup.as_set(Earth.poli_body,
                               a=Earth.poli_body.R_mean + 1325 * u.km, ecc=0 * u.one, inc=50.88 * u.deg,
                               rraan=np.mod(np.arange(0, num_plane) * 360.0 / num_plane * 2, 360.0) * u.deg,
                               aargp=np.repeat(0 * u.deg, num_plane),
@@ -48,12 +48,12 @@ def _Telesat_00053():
                                          np.tile(np.array([0, 3, 1, 4, 2] * 8) * 2.18, (num_sat, 1)).T, 360),
                                   num_plane) * u.deg,
                               epoch=J2017)
-    set_inc.set_color("#FF4136")  # Blue
-    set_inc.set_fov(44.85 * u.deg)
+    set_inc.color = "#FF4136"  # Blue
+    #set_inc.set_fov(44.85 * u.deg)
 
     constellation = Constellation()
     constellation.append(set_polar)
-    constellation.append(set_inc)
+    #constellation.append(set_inc)
 
     return constellation
 

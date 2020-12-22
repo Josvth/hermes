@@ -8,7 +8,7 @@ from poliastro.core.angles import _kepler_equation, _kepler_equation_prime, E_to
 
 import numpy as np
 
-@jit
+#@jit
 def markley_coe(k, p, ecc, inc, raan, argp, nu, tof):
 
     M0 = E_to_M(nu_to_E(nu, ecc), ecc)

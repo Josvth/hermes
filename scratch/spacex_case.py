@@ -1,6 +1,6 @@
 from hermes.simulation import Scenario
 from hermes.constellations.O3b_00154 import O3b
-from hermes.objects import Earth, Satellite, SatSet, Constellation
+from hermes.objects import Earth, Satellite, SatGroup, Constellation
 from hermes.analysis import AccessAnalysis
 import numpy as np
 from astropy import time, units as u
@@ -22,15 +22,15 @@ n_plane = 72  # number of planes
 n_sat = 20  # number of satellites per plane
 
 # assuming 11/20 phase offset
-set = SatSet.as_set(Earth.poli_body,
-                            a=Earth.poli_body.R_mean + 550 * u.km, ecc=0 * u.one, inc=53.0 * u.deg,
-                            rraan=np.arange(0, n_plane) * 360 / n_plane * u.deg,
-                            aargp=np.repeat(0 * u.deg, n_plane),
-                            nnnu=np.split(np.mod(
+set = SatGroup.as_set(Earth.poli_body,
+                      a=Earth.poli_body.R_mean + 550 * u.km, ecc=0 * u.one, inc=53.0 * u.deg,
+                      rraan=np.arange(0, n_plane) * 360 / n_plane * u.deg,
+                      aargp=np.repeat(0 * u.deg, n_plane),
+                      nnnu=np.split(np.mod(
                                 np.tile(np.arange(0, n_sat) * 360 / n_sat * u.deg, (n_plane, 1)) +
                                 np.tile(np.arange(0, n_plane) * (0) * u.deg, (n_sat, 1)).T, 360 * u.deg),
                                 n_plane),
-                            epoch=J2019)
+                      epoch=J2019)
 set.set_color("#0074D9")    # Blue
 
 constellation = Constellation()

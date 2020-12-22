@@ -1,4 +1,4 @@
-from hermes.objects import Satellite, Earth, Constellation, SatSet, SatPlane
+from hermes.objects import Satellite, Earth, Constellation, SatGroup, SatPlane
 
 import numpy as np
 from astropy import time, units as u

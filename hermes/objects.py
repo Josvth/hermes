@@ -5,13 +5,11 @@ from mayavi import mlab
 import poliastro
 from poliastro.frames import Planes
 from poliastro.twobody import Orbit
-from poliastro.twobody.propagation import *
 from scipy.constants import kilo
 
 from astropy import time, units as u
 import numpy as np
 
-from hermes import visualisation
 from hermes.propagation import markley_coe
 
 from hermes.util import calc_lmn, coe2xyz_fast, hex2rgb
@@ -19,6 +17,7 @@ from collections import MutableSequence
 
 SCALE_FACTOR = 100
 TUBE_RADIUS = 10.
+TRAILING = 100
 
 J2000 = time.Time('J2000', scale='utc')
 
@@ -109,6 +108,7 @@ class CelestialBody(ScenarioObject):
 
             from tqdm import tqdm
             dbar = tqdm(leave=False)
+
             def download_bar(count, block_size, total_size):
                 dbar.total = total_size
                 dbar.update(block_size)
@@ -129,14 +129,14 @@ class CelestialBody(ScenarioObject):
         Nrad = 180
 
         # create the sphere source with a given radius and angular resolution
-        sphere = tvtk.TexturedSphereSource(radius=self.poli_body.R_mean.to(visualisation.SCALE_UNIT).value, theta_resolution=Nrad,
+        sphere = tvtk.TexturedSphereSource(radius=self.poli_body.R_mean.to(SCALE_UNIT).value, theta_resolution=Nrad,
                                            phi_resolution=Nrad)
 
         # assemble rest of the pipeline, assign texture
         sphere_mapper = tvtk.PolyDataMapper(input_connection=sphere.output_port)
         self.sphere_actor = tvtk.Actor(mapper=sphere_mapper, texture=texture)
         figure.scene.add_actor(self.sphere_actor)
-        #print("Finished loading Earth")
+        # print("Finished loading Earth")
 
     def draw_update(self, figure):
         self.sphere_actor.orientation = [0, 0, self.rotation.to(u.deg).value]
@@ -144,7 +144,6 @@ class CelestialBody(ScenarioObject):
 
 
 class _EarthObject(CelestialBody):
-
     plot_color = '#0e4a5b'
 
     def __init__(self):
@@ -154,95 +153,84 @@ class _EarthObject(CelestialBody):
 Earth = _EarthObject()
 
 
-class ObjectOrbit(Orbit, ScenarioObject):
-
-    def __init__(self, state, epoch):
-        self.plot_color = hex2rgb('#ffffff')
-        self.orbit_points = None
-        super().__init__(state, epoch)
-
-    # Abstract implementations
-    def __len__(self):
-        return 1
-
-    def initialize(self):
-        pass
-
-    def propagate_to(self, t):
-        # Todo it would be real nice if this could be done pointer wise
-        self._xyz = propagate(self, t)._xyz[0]
-
-        # k = self.attractor.k.to(u.m ** 3 / u.s ** 2).value
-        # tt = t.to(u.s).value
-        # p = self.p.value
-        # ecc = self.ecc.value
-        # inc = self.inc.to(u.rad).value,
-        # raan = self.raan.to(u.rad).value,
-        # argp = self.argp.to(u.rad).value
-        # nu0 = self.nu.to(u.rad).value
-
-        # test_nu = markley_bulk(k, tt, p, ecc, inc, raan, argp, nu0)
-        # test_xyz, vv = coe2rv(k, p, ecc, inc, raan, argp, test_nu)
-
-        # assert np.array_equal(self._xyz._xyz.value, test_xyz)
-
-        pass
-
-    def draw(self, figure):
-        #if self.orbit_points is None:
-            pos = self.sample()
-            x = pos.x.to(visualisation.SCALE_UNIT)
-            y = pos.y.to(visualisation.SCALE_UNIT)
-            z = pos.z.to(visualisation.SCALE_UNIT)
-            self.orbit_points = mlab.plot3d(x, y, z, color=self.plot_color, tube_radius=TUBE_RADIUS)
-
-    def draw_update(self, figure):
-        pass
-
-    def set_color(self, color):
-        self.plot_color = hex2rgb(color)
+# class ObjectOrbit(Orbit, ScenarioObject):
+#
+#     def __init__(self, state, epoch):
+#         self.plot_color = hex2rgb('#ffffff')
+#         self.orbit_points = None
+#         super().__init__(state, epoch)
+#
+#     # Abstract implementations
+#     def __len__(self):
+#         return 1
+#
+#     def initialize(self):
+#         pass
+#
+#     def propagate_to(self, t):
+#         # Todo it would be real nice if this could be done pointer wise
+#         self._xyz = propagate(self, t)._xyz[0]
+#
+#         # k = self.attractor.k.to(u.m ** 3 / u.s ** 2).value
+#         # tt = t.to(u.s).value
+#         # p = self.p.value
+#         # ecc = self.ecc.value
+#         # inc = self.inc.to(u.rad).value,
+#         # raan = self.raan.to(u.rad).value,
+#         # argp = self.argp.to(u.rad).value
+#         # nu0 = self.nu.to(u.rad).value
+#
+#         # test_nu = markley_bulk(k, tt, p, ecc, inc, raan, argp, nu0)
+#         # test_xyz, vv = coe2rv(k, p, ecc, inc, raan, argp, test_nu)
+#
+#         # assert np.array_equal(self._xyz._xyz.value, test_xyz)
+#
+#         pass
+#
+#     def draw(self, figure):
+#         #if self.orbit_points is None:
+#             pos = self.sample()
+#             x = pos.x.to(SCALE_UNIT)
+#             y = pos.y.to(SCALE_UNIT)
+#             z = pos.z.to(SCALE_UNIT)
+#             self.orbit_points = mlab.plot3d(x, y, z, color=self.plot_color, tube_radius=TUBE_RADIUS)
+#
+#     def draw_update(self, figure):
+#         pass
+#
+#     def set_color(self, color):
+#         self.plot_color = hex2rgb(color)
 
 
 class GroupNode(ABC):
+    _color = hex2rgb('#00ffff')
     parent = None
 
-    # Todo, re-introduce update methods for speed?
-
-    @abstractmethod
-    def draw_orbits(self, figure):
-        pass
-
-    @abstractmethod
-    def draw_sats(self, figure):
-        pass
+    def __len__(self):
+        return 1
 
     @abstractmethod
     def __iter__(self):
         pass
 
+    @property
+    def color(self):
+        return self._color
 
-class Satellite(ObjectOrbit, GroupNode):
+    @color.setter
+    def color(self, color):
+        self._color = hex2rgb(color)
+
+    def iter_all(self):
+        yield self
+
+class Satellite(Orbit, GroupNode):
     fov = 45 * u.deg  # Nadir pointing FOV
 
     def __init__(self, state, epoch):
         super().__init__(state, epoch)
         self._xyz = self.r  # set the initial position
         self.pos_points = None
-
-    def draw_sats(self, figure):
-
-        # ToDo somehow get position from parent if this is called
-        if self.pos_points is None:
-            x, y, z = self.r[0].to(u.km), self.r[1].to(u.km), self.r[2].to(u.km)
-            self.pos_points = mlab.points3d(x, y, z, color=self.plot_color, scale_factor=SCALE_FACTOR,
-                                            figure=figure)
-        else:
-            x, y, z = self.r[0].to(u.km), self.r[1].to(u.km), self.r[2].to(u.km)
-            self.pos_points.mlab_source.trait_set(x=x, y=y, z=z)
-
-    def draw_orbits(self, figure):
-        # Call ObjectOrbit draw
-        super().draw(figure)
 
     def __iter__(self):
         yield self
@@ -258,7 +246,7 @@ class SatGroup(GroupNode, MutableSequence):
         self._group_type = group_type
 
         #  Empty fields
-        self.xyz_in_m = 0
+        self.rr = 0
         self.k = 0
         self.pp = 0
         self.eecc = 0
@@ -290,47 +278,53 @@ class SatGroup(GroupNode, MutableSequence):
         del self._children[index]
 
     def insert(self, index, value):
-        # if not isinstance(value, Satellite) and not isinstance(value, SatGroup) and not issubclass(value.ge, SatGroup):
-        #     warnings.warn("Type %s is not supported." % value, UserWarning)
+        # TODO check value
         self._children.insert(index, value)
+        value.parent = self
 
     def __setitem__(self, index, value):
         self._children[index] = value
+        value.parent = self
+
+    def r_of(self, ob):
+        if self.parent is None:
+            return self.rr[self.index(ob), :]
+        else:
+            self.parent.r_of(ob)
 
     def __iter__(self):
-
         # Iterate depth first
         for child in chain(*map(iter, self._children)):
             yield child
 
+    def iter_all(self):
+        yield self
+        for child in self._children:
+            yield from child.iter_all()
+
     def initialize(self):
-
         # Store satellite parameters
-        length = len(self)
-        self.xyz_in_m = np.zeros((length, 3))
-        # Todo make Earth less hard coded
-        self.k = Earth.poli_body.k.to(u.m ** 3 / u.s ** 2).value
+        N = len(self)
+        self.rr = np.zeros((N, 3))
 
-        self.pp = np.zeros(length)
-        self.eecc = np.zeros(length)
-        self.iinc = np.zeros(length)
-        self.rraan = np.zeros(length)
-        self.aargp = np.zeros(length)
-        self.nnu0 = np.zeros(length)
-
-        self.colors = np.zeros((length, 4))
+        self.kk = np.zeros(N)
+        self.pp = np.zeros(N)
+        self.eecc = np.zeros(N)
+        self.iinc = np.zeros(N)
+        self.rraan = np.zeros(N)
+        self.aargp = np.zeros(N)
+        self.nnu0 = np.zeros(N)
 
         # generate vectors
         for i, s in enumerate(self):
+            self.kk[i] = s.attractor.k.value
             self.pp[i] = s.p.value
             self.eecc[i] = s.ecc.value
             self.iinc[i] = s.inc.to(u.rad).value
             self.rraan[i] = s.raan.to(u.rad).value
             self.aargp[i] = s.argp.to(u.rad).value
             self.nnu0[i] = s.nu.to(u.rad).value
-            self.xyz_in_m[i] = s.r.to(u.m).value
-            self.colors[i, :] = np.array(
-                [s.plot_color[0], s.plot_color[1], s.plot_color[2], 1]) * 255  # Add no transparency
+            self.rr[i] = s.r.to(u.m).value
 
         # precalculate lmn
         self.ll1, self.mm1, self.nn1, self.ll2, self.mm2, self.nn2 = calc_lmn(self.iinc, self.rraan, self.aargp)
@@ -338,7 +332,7 @@ class SatGroup(GroupNode, MutableSequence):
     def propagate_to(self, t):
 
         # propagate at once
-        nnu = markley_coe(self.k, self.pp, self.eecc, None, None, None, self.nnu0, t.to(u.s).value)
+        nnu = markley_coe(self.kk, self.pp, self.eecc, self.iinc, self.rraan, self.aargp, self.nnu0, t.to(u.s).value)
 
         import numpy.ctypeslib as nc
         # self._xyz, vv = coe2rv(self.k, self.pp, self.eecc, self.iinc, self.rraan, self.aargp, nnu)
@@ -347,60 +341,14 @@ class SatGroup(GroupNode, MutableSequence):
         # self._xyz = coe2xyz(self.k, self.pp, self.eecc, self.iinc, self.rraan, self.aargp, nnu) * u.m
         # self.xyz_in_m = coe2xyz_fast(self.pp, self.eecc, self.ll1, self.mm1, self.nn1, self.ll2, self.mm2, self.nn2,
         #                              nnu)
-        coe2xyz_fast(self.xyz_in_m, self.pp, self.eecc, self.ll1, self.mm1, self.nn1, self.ll2, self.mm2, self.nn2,
-                     nnu)
-
-    def draw(self, figure):
-
-        # Check to see if we have drawn before
-        if self.sat_points is None:
-            # Let children draw but not the actual satellites as we draw them as one point cloud
-            # Very important here is to use 'self._children' and NOT 'self' because it will then also iterate over
-            # individual satellites that are in planes
-            for child in self._children:
-                child.draw_orbits(figure)
-
-        # Draw all the sats in a figure
-        self.draw_sats(figure)
-
-    def draw_orbits(self, figure):
-
-        # Let children draw but not the actual satellites
-        # Very important here is to use 'self._children' and NOT 'self' because it will then also iterate over
-        # individual satellites that are in planes
-        for child in self._children:
-            child.draw_orbits(figure)
-
-    def draw_sats(self, figure):
-
-        # Draws all satellites as a single plot3D
-
-        if self.sat_points is None:
-            x, y, z = self.get_mayavi_xyz()
-
-            self.sat_points = mlab.points3d(x, y, z, np.arange(len(self)), figure=figure, scale_mode='none',
-                                            scale_factor=SCALE_FACTOR, color=tuple(self.colors[0, 0:3] / 255))
-
-            if len(self) > 1:
-                self.sat_points.module_manager.scalar_lut_manager.lut.number_of_colors = len(self.colors)
-                self.sat_points.module_manager.scalar_lut_manager.lut.table = self.colors
-
-            mlab.draw()
-        else:
-            x, y, z = self.get_mayavi_xyz()
-            self.sat_points.mlab_source.trait_set(x=x, y=y, z=z)
-
-    def get_mayavi_xyz(self):
-        # # ToDo I assume all points are in u.km
-        # stacked = np.stack(self._xyz_in_m)
-        # x, y, z = stacked[:, 0], stacked[:, 1], stacked[:, 2]
-        x, y, z = self.xyz_in_m[:, 0] / 1000, self.xyz_in_m[:, 1] / 1000, self.xyz_in_m[:, 2] / 1000
-        return x, y, z
+        coe2xyz_fast(self.rr, self.pp, self.eecc, self.ll1, self.mm1, self.nn1, self.ll2, self.mm2, self.nn2, nnu)
 
     # Satellite mutations
-    def set_color(self, color):
+    @GroupNode.color.setter
+    def color(self, color):
         for child in self._children:
-            child.set_color(color)
+            child.color = color
+        _color = color
 
     def set_fov(self, fov):
         for sat in self._children:
@@ -434,7 +382,7 @@ class SatGroup(GroupNode, MutableSequence):
         """
 
         group = SatPlane()
-        group.ref_orbit = ObjectOrbit.from_classical(attractor, a, ecc, inc, raan, argp, 0 * u.deg, epoch, plane)
+        group.ref_orbit = Orbit.from_classical(attractor, a, ecc, inc, raan, argp, 0 * u.deg, epoch, plane)
 
         n_sat = len(nnu)
 
@@ -480,7 +428,7 @@ class SatGroup(GroupNode, MutableSequence):
 
         n_plane = len(rraan)
 
-        group = SatSet()
+        group = SatGroup()
         group._group_type = "set"
 
         for i_p in range(n_plane):
@@ -496,34 +444,6 @@ class SatGroup(GroupNode, MutableSequence):
 class SatPlane(SatGroup):
     group_type = "plane"
     ref_orbit = None
-
-    # def draw_orbit(self, figure):
-    #     if self.ref_orbit is not None:
-    #         self.ref_orbit.draw(figure)
-
-    def draw_orbits(self, figure):
-        if self.ref_orbit is not None:
-            self.ref_orbit.draw(figure)
-        self.ref_orbit.draw(figure)
-
-    # def draw(self, figure, draw_sats=True):
-    #     self.draw_orbit(figure)
-    #     if draw_sats:
-    #         self.draw_sats(figure)
-
-    def set_color(self, color):
-        if self.ref_orbit is not None:
-            self.ref_orbit.set_color(color)
-        super().set_color(color)
-
-    # ToDo add .circular constructor
-
-
-class SatSet(SatGroup):
-    group_type = "set"
-
-    # ToDo add .circular constructor
-
 
 class Constellation(SatGroup):
     group_type = "constellation"

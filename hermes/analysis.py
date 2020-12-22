@@ -114,7 +114,7 @@ class AccessAnalysis(Analysis):
         return slice(i_group, i_group + len(value), 1)
 
     def get_positions(self, indices):
-        return self.scenario.sat_group.xyz_in_m[indices]
+        return self.scenario.sat_group.rr[indices]
 
     def initialize(self):
 

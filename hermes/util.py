@@ -87,29 +87,6 @@ def calc_lmn(iinc, rraan, aargp):
 
     return ll1, mm1, nn1, ll2, mm2, nn2
 
-@jit
-def coe2xyz(pp, eecc, iinc, rraan, aargp, nnu):
-    """
-    Bulk calculate cartesian coordinates from orbital elements
-    Based on Fundamentals of Astrodynamics (January 2015) section 11.8 page 268 - 271
-
-    Parameters
-    ----------
-    k : float
-        Standard gravitational parameter (km^3 / s^2).
-    pp : float
-        Semi-latus rectum or parameter (km).
-    eecc : float
-        Eccentricity.
-    nnu: float
-        True anomaly (rad).
-
-    Returns
-    -------
-    xyz : np.array
-        Array with xyz coordinates in meters
-    """
-    return coe2xyz_fast(pp, eecc, calc_lmn(iinc, rraan, aargp), nnu)
 
 import numpy.ctypeslib as nc
 @jit
@@ -127,3 +104,29 @@ def coe2xyz_fast(xyz, pp, eecc, ll1, mm1, nn1, ll2, mm2, nn2, nnu):
 @jit
 def norm_along_rows(x):
     return np.sum(np.abs(x)**2,axis=-1)**(1./2)
+
+
+def generate_time_vector(start, stop, delta):
+
+    """Generates time vectors for simulation
+
+    Parameters
+    ----------
+    start : ~astropy.time.Time
+        Start time
+    stop : ~astropy.time.Time
+        End time.
+    """
+
+    # Create time vector
+    dt = stop - start
+
+    t = np.arange(0, dt.to(u.s).value, delta.to(u.s).value)
+    tof_vector = time.TimeDelta(t * u.s)
+
+    # Use the highest precision we can afford
+    # np.atleast_1d does not work directly on TimeDelta objects
+    jd1 = np.atleast_1d(tof_vector.jd1)
+    jd2 = np.atleast_1d(tof_vector.jd2)
+
+    return time.TimeDelta(jd1, jd2, format="jd", scale=tof_vector.scale)

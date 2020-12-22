@@ -77,7 +77,7 @@ def Telesat_example():
 
     # Also add the constellation
     constellation = Telesat_00053
-    #scenario.add_satellite(constellation)
+    scenario.add_satellite(constellation)
 
     # Add analysis
     #an = AccessAnalysis(scenario, sat1, constellation)
