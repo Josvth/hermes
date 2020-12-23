@@ -219,7 +219,7 @@ class GroupNode(ABC):
 
     @color.setter
     def color(self, color):
-        self._color = hex2rgb(color)
+        self._color = color
 
     def iter_all(self):
         yield self
@@ -348,7 +348,7 @@ class SatGroup(GroupNode, MutableSequence):
     def color(self, color):
         for child in self._children:
             child.color = color
-        _color = color
+        self._color = color
 
     def set_fov(self, fov):
         for sat in self._children:

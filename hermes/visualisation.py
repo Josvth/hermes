@@ -67,17 +67,19 @@ def draw_satellite_group(figure, group, m_data=None):
 
     if m_data is None:  # Make new points cloud
         # Make a list of colors
-        colors = np.zeros((len(group), 4))
+        colors = np.ones((len(group), 4))
         for i, ob in enumerate(group):
             colors[i, 0:3] = ob.color
 
-        m_data = mlab.points3d(x, y, z, np.arange(len(group)), figure=figure, scale_mode='none',
-                               scale_factor=SCALE_FACTOR, color=tuple(colors[0, 0:3]))
-
-        # If we have more than 1 satellite we need to set the color look up table
+        # If we have more than 1 satellite color we need to set the color look up table
         if len(colors) > 1:
+            m_data = mlab.points3d(x, y, z, np.arange(len(group)), figure=figure, scale_mode='none',
+                                   scale_factor=SCALE_FACTOR)
             m_data.module_manager.scalar_lut_manager.lut.number_of_colors = colors.shape[0]
-            m_data.module_manager.scalar_lut_manager.lut.table = colors
+            m_data.module_manager.scalar_lut_manager.lut.table = colors * 255
+        else:
+            m_data = mlab.points3d(x, y, z, np.arange(len(group)), figure=figure, scale_mode='none',
+                                   scale_factor=SCALE_FACTOR, color=tuple(colors[1, 0:3]))
 
         return m_data
     else:  # Update points cloud data
@@ -142,42 +144,98 @@ def draw_earth(attractor, actor=None, figure=None):
     return actor
 
 
-class Visualisation3D(object):
+def draw_satellites(satellites, m_data_list=None, figure=None):
+    if figure is None:
+        figure = mlab.figure(size=(1200, 1200), bgcolor=(1.0, 1.0, 1.0))  # Make a new figure (similar to MATLAB)
 
-    def __init__(self, state_queue):
-        self.queue = state_queue
+    if m_data_list is None:
+        m_data_list = []
+
+    n = 0  # We don't know how many objects need drawing
+
+    # # Draw top level
+    # m_data = self.m_data[n] if len(self.m_data) > n else self.m_data.append(None)
+    # self.m_data[n] = draw_satellite_group(self.figure, satellites, m_data=m_data)
+    # n = n + 1
+
+    for ob in satellites.iter_all():
+
+        if isinstance(ob, SatPlane):
+            # We always draw the planes
+            m_data = m_data_list[n] if len(m_data_list) > n else m_data_list.append(None)
+            m_data_list[n] = draw_satellite_plane(figure, ob, m_data=m_data)
+            n = n + 1
+            pass
+        elif isinstance(ob, SatGroup):
+            if ob.parent is None:
+                # If this SatGroup has no parent it is a top-level set and we draw the satellites
+                m_data = m_data_list[n] if len(m_data_list) > n else m_data_list.append(None)
+                m_data_list[n] = draw_satellite_group(figure, ob, m_data=m_data)
+                n = n + 1
+                pass
+        elif isinstance(ob, Satellite):
+            if not isinstance(ob.parent, SatPlane):
+                # If the satellite is not in a plane we draw its orbit traced (see update_satellite)
+                m_data = m_data_list[n] if len(m_data_list) > n else m_data_list.append(None)
+                m_data_list[n] = draw_satellite(figure, ob, m_data=m_data)
+                n = n + 1
+
+        else:
+            print("Cannot draw: %s" % type(ob).__name__)
+
+    return m_data_list
+
+
+class Visualisation3DGIL(object):
+
+    def __init__(self, scenario):
+        self.scenario = scenario
         self.attractor_actor = None
-        self.m_data = []
+        self.m_data_list = []
         self.figure = mlab.figure(size=(1200, 1200), bgcolor=(1.0, 1.0, 1.0))  # Make a new figure (similar to MATLAB)
         # self.figure = fig if (fig is not None) else mlab.figure()
         # self.figure = None
 
-    def initialise(self, state):
+    def initialize(self, state):
         """"Initialises the visualisation by drawing objects"""
         self.draw_attractor(state.attractor)
-        #self.draw_satellites(state.satellites)
+        self.m_data_list = draw_satellites(state.satellites, m_data_list=self.m_data_list, figure=self.figure)
         pass
 
-    @mlab.show
-    @mlab.animate(delay=100)
+    # @mlab.show
+    @mlab.animate(delay=50, ui=True)
     def animate(self):
 
-        #self.figure = mlab.figure(size=(1200, 1200), bgcolor=(1.0, 1.0, 1.0))  # Make a new figure (similar to MATLAB)
+        import time as ptime
+
+        print("Starting in:")
+        t = 5
+        while t:
+            mins, secs = divmod(t, 60)
+            timer = '{:02d}:{:02d}'.format(mins, secs)
+            print(timer, end="\r")
+            ptime.sleep(1)
+            t -= 1
+
+        # self.figure = mlab.figure(size=(1200, 1200), bgcolor=(1.0, 1.0, 1.0))  # Make a new figure (similar to MATLAB)
 
         self.figure.scene.disable_render = True
-        self.initialise(self.queue.get())
+        self.initialize(self.scenario.initialize())
         self.figure.scene.disable_render = False
 
-        while True:
+        for state in self.scenario.run():
             self.figure.scene.disable_render = True
-            #print("VIS!")
-            state = self.queue.get()
+            # print("VIS!")
             self.draw_attractor(state.attractor)
-            #self.draw_satellites(state.satellites)
+            self.m_data_list = draw_satellites(state.satellites, m_data_list=self.m_data_list, figure=self.figure)
             self.figure.scene.disable_render = False
             yield
-            #import time
-            #time.sleep(.1)
+            # import time
+            # time.sleep(.1)
+
+    def run(self):
+        an = self.animate()
+        mlab.show()  # Blocking
 
     # Attractor visualisation
     def draw_attractor(self, attractor):
@@ -186,37 +244,48 @@ class Visualisation3D(object):
         else:
             print("Cannot draw body: %s" % type(attractor).__name__)
 
-    # Satellite visualisation
-    def draw_satellites(self, satellites):
 
-        n = 0  # We don't know how many objects need drawing
+class Visualisation3D(object):
 
-        # # Draw top level
-        # m_data = self.m_data[n] if len(self.m_data) > n else self.m_data.append(None)
-        # self.m_data[n] = draw_satellite_group(self.figure, satellites, m_data=m_data)
-        # n = n + 1
+    def __init__(self, state_queue):
+        self.queue = state_queue
+        self.attractor_actor = None
+        self.m_data = []
+        self.figure = None
+        # self.figure = mlab.figure(size=(1200, 1200), bgcolor=(1.0, 1.0, 1.0))  # Make a new figure (similar to MATLAB)
+        # self.figure = fig if (fig is not None) else mlab.figure()
+        # self.figure = None
 
-        for ob in satellites.iter_all():
+    def initialise(self, state):
+        """"Initialises the visualisation by drawing objects"""
+        self.draw_attractor(state.attractor)
+        draw_satellites(state.satellites)
+        pass
 
-            if isinstance(ob, SatPlane):
-                # # We always draw the planes
-                # m_data = self.m_data[n] if len(self.m_data) > n else self.m_data.append(None)
-                # self.m_data[n] = draw_satellite_plane(self.figure, ob, m_data=m_data)
-                # n = n + 1
-                pass
-            elif isinstance(ob, SatGroup):
-                # if ob.parent is None:
-                #     # If this SatGroup has no parent it is a top-level set and we draw the satellites
-                #     m_data = self.m_data[n] if len(self.m_data) > n else self.m_data.append(None)
-                #     self.m_data[n] = draw_satellite_group(self.figure, ob, m_data=m_data)
-                #     n = n + 1
-                pass
-            elif isinstance(ob, Satellite):
-                if not isinstance(ob.parent, SatPlane):
-                    # If the satellite is not in a plane we draw its orbit traced (see update_satellite)
-                    m_data = self.m_data[n] if len(self.m_data) > n else self.m_data.append(None)
-                    self.m_data[n] = draw_satellite(self.figure, ob, m_data=m_data)
-                    n = n + 1
+    # @mlab.show
+    @mlab.animate(delay=50, ui=True)
+    def animate(self):
 
-            else:
-                print("Cannot draw: %s" % type(ob).__name__)
+        self.figure = mlab.figure(size=(1200, 1200), bgcolor=(1.0, 1.0, 1.0))  # Make a new figure (similar to MATLAB)
+
+        self.figure.scene.disable_render = True
+        self.initialise(self.queue.get())
+        self.figure.scene.disable_render = False
+
+        while True:
+            self.figure.scene.disable_render = True
+            # print("VIS!")
+            state = self.queue.get()
+            self.draw_attractor(state.attractor)
+            draw_satellites(state.satellites)
+            self.figure.scene.disable_render = False
+            yield
+            # import time
+            # time.sleep(.1)
+
+    # Attractor visualisation
+    def draw_attractor(self, attractor):
+        if isinstance(attractor, _EarthObject):
+            self.attractor_actor = draw_earth(attractor, self.attractor_actor, self.figure)
+        else:
+            print("Cannot draw body: %s" % type(attractor).__name__)

@@ -4,6 +4,9 @@ import numpy as np
 from astropy import time, units as u
 
 # Based off SAT-MPL-20200526-00053 and
+from hermes.util import hex2rgb
+
+
 def _Telesat_00053():
 
     J2017 = time.Time('J2017', scale='tt')
@@ -28,7 +31,7 @@ def _Telesat_00053():
                                                 np.tile(np.arange(0, num_plane) * 1.025, (num_sat, 1)).T, 360),
                                     num_plane) * u.deg,
                                 epoch=J2017)
-    set_polar.color = "#0074D9"  # Blue
+    set_polar.color = hex2rgb("#0074D9")  # Blue
     #set_polar.set_fov(44.85 * u.deg)
 
     # 40 planes (@ 1325 km, 50.88 degree, 33 sats/plane)
@@ -48,12 +51,12 @@ def _Telesat_00053():
                                          np.tile(np.array([0, 3, 1, 4, 2] * 8) * 2.18, (num_sat, 1)).T, 360),
                                   num_plane) * u.deg,
                               epoch=J2017)
-    set_inc.color = "#FF4136"  # Blue
+    set_inc.color = hex2rgb("#FF4136")  # Blue
     #set_inc.set_fov(44.85 * u.deg)
 
     constellation = Constellation()
     constellation.append(set_polar)
-    #constellation.append(set_inc)
+    constellation.append(set_inc)
 
     return constellation
 
