@@ -6,7 +6,9 @@ from mayavi import mlab
 import numpy as np
 from numpy import concatenate as cat
 
+from hermes.analysis import LOSAnalysis
 from hermes.objects import Earth, SatPlane, Satellite, SatGroup, SatGroup, _EarthObject
+from hermes.util import hex2rgb
 
 SCALE_UNIT = u.km
 SCALE_FACTOR = 100
@@ -79,7 +81,7 @@ def draw_satellite_group(figure, group, m_data=None):
             m_data.module_manager.scalar_lut_manager.lut.table = colors * 255
         else:
             m_data = mlab.points3d(x, y, z, np.arange(len(group)), figure=figure, scale_mode='none',
-                                   scale_factor=SCALE_FACTOR, color=tuple(colors[1, 0:3]))
+                                   scale_factor=SCALE_FACTOR, color=tuple(colors[0, 0:3]))
 
         return m_data
     else:  # Update points cloud data
@@ -186,12 +188,57 @@ def draw_satellites(satellites, m_data_list=None, figure=None):
     return m_data_list
 
 
+def draw_analysis(analyses, draw_los=True, draw_nonlos=False, figure=None):
+    if figure is None:
+        figure = mlab.figure(size=(1200, 1200), bgcolor=(1.0, 1.0, 1.0))  # Make a new figure (similar to MATLAB)
+
+    m_data = []
+
+    for analysis in analyses:
+        if isinstance(analysis, LOSAnalysis):
+            los = analysis.los
+
+            # draw line-of-sight vectors
+            if draw_los:
+                for r_b_los in analysis.rr_b[analysis.los, :]:
+                    m_data.append(draw_los_vector(analysis.r_a, r_b_los, color=hex2rgb('#01FF70'), figure=figure))
+
+            if draw_nonlos:
+                for r_b_los in analysis.rr_b[~analysis.los, :]:
+                    m_data.append(draw_los_vector(analysis.r_a, r_b_los, color=hex2rgb('#c3312f'), figure=figure))
+
+    return m_data
+
+
+def draw_los_vector(r_a, r_b, color=None, figure=None):
+    if figure is None:
+        figure = mlab.figure(size=(1200, 1200), bgcolor=(1.0, 1.0, 1.0))  # Make a new figure (similar to MATLAB)
+
+    if color is None:
+        color = hex2rgb('#01FF70')
+
+    x = np.array([0, 0])
+    y = np.array([0, 0])
+    z = np.array([0, 0])
+
+    x[0] = r_a[0] * u.m.to(SCALE_UNIT)
+    y[0] = r_a[1] * u.m.to(SCALE_UNIT)
+    z[0] = r_a[2] * u.m.to(SCALE_UNIT)
+
+    x[1] = r_b[0] * u.m.to(SCALE_UNIT)
+    y[1] = r_b[1] * u.m.to(SCALE_UNIT)
+    z[1] = r_b[2] * u.m.to(SCALE_UNIT)
+
+    return mlab.plot3d(x, y, z, tube_radius=TUBE_RADIUS, color=color, figure=figure)
+
+
 class Visualisation3DGIL(object):
 
     def __init__(self, scenario):
         self.scenario = scenario
         self.attractor_actor = None
-        self.m_data_list = []
+        self.m_data_sats = []
+        self.m_data_analyses = []
         self.figure = mlab.figure(size=(1200, 1200), bgcolor=(1.0, 1.0, 1.0))  # Make a new figure (similar to MATLAB)
         # self.figure = fig if (fig is not None) else mlab.figure()
         # self.figure = None
@@ -199,7 +246,7 @@ class Visualisation3DGIL(object):
     def initialize(self, state):
         """"Initialises the visualisation by drawing objects"""
         self.draw_attractor(state.attractor)
-        self.m_data_list = draw_satellites(state.satellites, m_data_list=self.m_data_list, figure=self.figure)
+        self.m_data_sats = draw_satellites(state.satellites, m_data_list=self.m_data_sats, figure=self.figure)
         pass
 
     # @mlab.show
@@ -227,7 +274,7 @@ class Visualisation3DGIL(object):
             self.figure.scene.disable_render = True
             # print("VIS!")
             self.draw_attractor(state.attractor)
-            self.m_data_list = draw_satellites(state.satellites, m_data_list=self.m_data_list, figure=self.figure)
+            self.m_data_sats = draw_satellites(state.satellites, m_data_list=self.m_data_sats, figure=self.figure)
             self.figure.scene.disable_render = False
             yield
             # import time
@@ -236,6 +283,18 @@ class Visualisation3DGIL(object):
     def run(self):
         an = self.animate()
         mlab.show()  # Blocking
+
+    def visualise(self):
+        self.draw_attractor(self.scenario.state.attractor)
+        self.m_data_sats = draw_satellites(self.scenario.state.satellites, m_data_list=self.m_data_sats,
+                                           figure=self.figure)
+
+        for m_data_analysis in self.m_data_analyses:
+            m_data_analysis.remove()
+        self.m_data_analyses = draw_analysis(self.scenario.state.analyses, draw_nonlos=True, figure=self.figure)
+
+    def show(self):
+        mlab.show()
 
     # Attractor visualisation
     def draw_attractor(self, attractor):

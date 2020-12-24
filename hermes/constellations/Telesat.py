@@ -51,7 +51,7 @@ def _Telesat_00053():
                                          np.tile(np.array([0, 3, 1, 4, 2] * 8) * 2.18, (num_sat, 1)).T, 360),
                                   num_plane) * u.deg,
                               epoch=J2017)
-    set_inc.color = hex2rgb("#FF4136")  # Blue
+    set_inc.color = hex2rgb("#FF4136")  # Red
     #set_inc.set_fov(44.85 * u.deg)
 
     constellation = Constellation()

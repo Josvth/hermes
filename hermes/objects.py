@@ -277,10 +277,16 @@ class SatGroup(GroupNode, MutableSequence):
     def __delitem__(self, index):
         del self._children[index]
 
-    def insert(self, index, value):
-        # TODO check value
-        self._children.insert(index, value)
-        value.parent = self
+    def insert(self, index, values):
+        if isinstance(values, SatGroup):
+            self._children.insert(index, values)
+            values.parent = self
+        else:
+            for value in values:
+                if not isinstance(value, GroupNode):
+                    raise ValueError("Can only take GroupNode objects.")
+                self._children.insert(index, value)
+                value.parent = self
 
     def __setitem__(self, index, value):
         self._children[index] = value
