@@ -1,1 +1,2 @@
 - Allow color to be specified ad RGB + Alpha
+- Make satellite.parent.r_of(satellite) a prettier syntax

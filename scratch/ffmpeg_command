@@ -1,0 +1,1 @@
+./ffmpeg -r 30 -f image2 -s 1980x1080 -i C:/Users/jjvan/Documents/mayavi_movies/movie011/anim%05d.png -vcodec libx264 -crf 15 -pix_fmt yuv420p test30.mp4

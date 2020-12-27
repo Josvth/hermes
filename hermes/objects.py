@@ -225,7 +225,16 @@ class GroupNode(ABC):
         yield self
 
 class Satellite(Orbit, GroupNode):
+
+    # Constraints
     fov = 45 * u.deg  # Nadir pointing FOV
+
+    # Visualisation options
+    fov_3D_show = False
+    fov_3D_opacity = 0.5
+
+    plane_3D_show = True
+    trace_3D_show = False
 
     def __init__(self, state, epoch):
         super().__init__(state, epoch)

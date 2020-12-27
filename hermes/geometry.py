@@ -4,6 +4,15 @@ from numpy.core.umath_tests import inner1d
 
 from hermes.util import norm_along_rows
 
+def fov_edge_range(r, theta, Rbody):
+    """ Computes the range to the edge of the FOV circle"""
+
+    # Solutions of cosine formula: a^2 - 2*b*cos(theta)*a + b^2 - c^2 = 0
+    a1 = r*np.cos(theta) + np.sqrt(Rbody**2 - r**2*np.sin(theta)**2)
+    a2 = r*np.cos(theta) - np.sqrt(Rbody**2 - r**2*np.sin(theta)**2)
+
+    return np.minimum(a1, a2) # Todo: is this always the minimum?
+
 @jit
 def point_inside_cone(r, ttip, ttheta, pphi = None):
     # ToDo Implement ttheta and pphi properly (depends on pointing/orientation)

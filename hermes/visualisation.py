@@ -7,57 +7,131 @@ import numpy as np
 from numpy import concatenate as cat
 
 from hermes.analysis import LOSAnalysis
+from hermes.geometry import fov_edge_range
 from hermes.objects import Earth, SatPlane, Satellite, SatGroup, SatGroup, _EarthObject
 from hermes.util import hex2rgb
 
 SCALE_UNIT = u.km
 SCALE_FACTOR = 100
 TUBE_RADIUS = 10.
-TRAILING = 10000
+TRAILING = 50
 TRAILING_OPACITY = np.linspace(0, 1, TRAILING)
+
+
+def draw_vector(figure, vector, origin=np.array([0, 0, 0]), m_data=None):
+    vector = np.atleast_2d(vector * u.m.to(SCALE_UNIT))
+    origin = np.atleast_2d(origin * u.m.to(SCALE_UNIT))
+    m_data = mlab.quiver3d(origin[:, 0], origin[:, 1], origin[:, 2], vector[:, 0], vector[:, 1], vector[:, 2],
+                           reset_zoom=False,
+                           mode='2darrow', scale_mode='vector', scale_factor=1, line_width=1.0)
+    return m_data
+
+
+def draw_satellite_fov(figure, satellite, m_data=None):
+    r = satellite.parent.r_of(satellite) * u.m.to(SCALE_UNIT)  # position vector in meters
+    r_norm = np.linalg.norm(r)
+
+    fov = satellite.fov.to(u.rad).value
+    R_body = satellite.attractor.R_mean.to(SCALE_UNIT).value
+
+    # Calculate the height and radius of the cone
+    a = fov_edge_range(r_norm, fov, R_body)
+    h_cone = a * np.cos(fov)
+
+    origin = r * (r_norm - h_cone) / r_norm
+    tip = r - origin
+
+    if m_data is None:
+        m_data = mlab.quiver3d(origin[0], origin[1], origin[2], tip[0], tip[1], tip[2],
+                               figure=figure, reset_zoom=False, mode='cone',
+                               color=satellite.color[0:3],
+                               scale_mode='vector', scale_factor=1, resolution=64)
+        m_data.glyph.glyph_source.glyph_source.angle = satellite.fov.to(u.deg).value
+        m_data.actor.actor.property.opacity = satellite.fov_3D_opacity
+    else:
+        m_data.mlab_source.trait_set(x=origin[0], y=origin[1], z=origin[2],
+                                     u=tip[0], v=tip[1], w=tip[2])
+        m_data.glyph.glyph_source.glyph_source.angle = satellite.fov.to(u.deg).value  # Reset these just in case
+        m_data.actor.actor.property.opacity = satellite.fov_3D_opacity  # Reset these just in case
+
+    return m_data
 
 
 def draw_satellite(figure, satellite, m_data=None):
     if m_data is None:  # Make new line
-        pos = satellite.sample()
-        x = pos.x.to(SCALE_UNIT)
-        y = pos.y.to(SCALE_UNIT)
-        z = pos.z.to(SCALE_UNIT)
-        return mlab.plot3d(x, y, z, figure=figure, color=satellite.color, tube_radius=TUBE_RADIUS)
-    else:  # We don't update planes
+
+        m_data_plane = draw_orbit(figure, satellite, satellite.color) if satellite.plane_3D_show else None
+        m_data_trace = draw_satellite_trace(figure, satellite) if satellite.trace_3D_show else None
+        m_data_fov = draw_satellite_fov(figure, satellite) if satellite.fov_3D_show else None
+
+    else:
+
+        m_data_plane = m_data['plane']
+        m_data_trace = m_data['trace']
+        m_data_fov = m_data['fov']
+
+        if satellite.plane_3D_show:
+            m_data_plane = draw_orbit(figure, satellite, satellite.color, m_data=m_data_plane)
+        elif m_data_plane is not None:
+            m_data_plane.remove()
+            m_data_plane = None
+
+        if satellite.trace_3D_show:
+            m_data_trace = draw_satellite_trace(figure, satellite, m_data=m_data_trace)
+        elif m_data_trace is not None:
+            m_data_trace.remove()
+            m_data_trace = None
+
+        if satellite.fov_3D_show:
+            m_data_fov = draw_satellite_fov(figure, satellite, m_data=m_data_fov)
+        elif m_data_fov is not None:
+            m_data_fov.remove()
+            m_data_fov = None
+
+    m_data = {'plane': m_data_plane, 'trace': m_data_trace, 'fov': m_data_fov}
+
+    return m_data
+
+
+def draw_satellite_trace(figure, satellite, m_data=None):
+    # Starts an orbit trace
+    x, y, z = satellite.parent.r_of(satellite) * (u.m.to(SCALE_UNIT))
+
+    if m_data is None:  # Make new line
+        return mlab.plot3d(x, y, z, 0, figure=figure, tube_radius=TUBE_RADIUS)
+    else:  # Update line
+        xx = np.insert(m_data.mlab_source.x, 0, x)
+        yy = np.insert(m_data.mlab_source.y, 0, y)
+        zz = np.insert(m_data.mlab_source.z, 0, z)
+        if len(xx) == TRAILING + 1:
+            # Roll trail
+            m_data.mlab_source.trait_set(x=xx[:-1], y=yy[:-1], z=zz[:-1])
+        else:
+
+            # Set lookup table
+            r = np.linspace(satellite.color[0], 1, TRAILING)
+            g = np.linspace(satellite.color[1], 1, TRAILING)
+            b = np.linspace(satellite.color[2], 1, TRAILING)
+            a = np.linspace(1, 0, TRAILING)
+            colors = np.array([r, g, b, a]).T
+            m_data.module_manager.scalar_lut_manager.lut.number_of_colors = len(xx)
+            m_data.module_manager.scalar_lut_manager.lut.table = colors[-len(xx):, :] * 255
+
+            ss = np.arange(len(xx))
+
+            m_data.mlab_source.reset(x=xx, y=yy, z=zz, scalars=ss)
+
         return m_data
-    # # Starts an orbit trace
-    # x, y, z = satellite.parent.r_of(satellite) * (u.m.to(SCALE_UNIT))
-    #
-    # if m_data is None:  # Make new line
-    #     return mlab.plot3d(x, y, z, 0, figure=figure, color=satellite.color, tube_radius=TUBE_RADIUS, transparent=True)
-    # else:  # Update line
-    #     xx = np.insert(m_data.mlab_source.x, 0, x)
-    #     yy = np.insert(m_data.mlab_source.y, 0, y)
-    #     zz = np.insert(m_data.mlab_source.z, 0, z)
-    #     if len(xx) == TRAILING + 1:
-    #         # Roll trail
-    #         m_data.mlab_source.trait_set(x=xx[:-1], y=yy[:-1], z=zz[:-1])
-    #     else:
-    #
-    #         # Set lookup table
-    #         #m_data.module_manager.scalar_lut_manager.lut.number_of_colors = 2
-    #         # TODO:
-    #         #m_data.module_manager.scalar_lut_manager.lut.table = np.array([list(satellite.color) + [0], [1,1,1,1]])
-    #
-    #         m_data.mlab_source.reset(x=xx, y=yy, z=zz, scalars=TRAILING_OPACITY[0:len(xx)])
-    #
-    #     return m_data
 
 
-def draw_satellite_plane(figure, plane, m_data=None):
+def draw_orbit(figure, orbit, color, m_data=None):
     """Draws a satellite plane if not drawn before"""
     if m_data is None:  # Make new line
-        pos = plane.ref_orbit.sample()
+        pos = orbit.sample(values=1000)
         x = pos.x.to(SCALE_UNIT).value
         y = pos.y.to(SCALE_UNIT).value
         z = pos.z.to(SCALE_UNIT).value
-        return mlab.plot3d(x, y, z, figure=figure, color=plane.color, tube_radius=TUBE_RADIUS)
+        return mlab.plot3d(x, y, z, figure=figure, color=color, tube_radius=TUBE_RADIUS)
     else:  # We don't update planes
         return m_data
 
@@ -165,7 +239,7 @@ def draw_satellites(satellites, m_data_list=None, figure=None):
         if isinstance(ob, SatPlane):
             # We always draw the planes
             m_data = m_data_list[n] if len(m_data_list) > n else m_data_list.append(None)
-            m_data_list[n] = draw_satellite_plane(figure, ob, m_data=m_data)
+            m_data_list[n] = draw_orbit(figure, ob.ref_orbit, ob.color, m_data=m_data)
             n = n + 1
             pass
         elif isinstance(ob, SatGroup):
@@ -180,6 +254,48 @@ def draw_satellites(satellites, m_data_list=None, figure=None):
                 # If the satellite is not in a plane we draw its orbit traced (see update_satellite)
                 m_data = m_data_list[n] if len(m_data_list) > n else m_data_list.append(None)
                 m_data_list[n] = draw_satellite(figure, ob, m_data=m_data)
+                n = n + 1
+
+        else:
+            print("Cannot draw: %s" % type(ob).__name__)
+
+    return m_data_list
+
+
+def draw_satellites_christmas(satellites, m_data_list=None, figure=None):
+    if figure is None:
+        figure = mlab.figure(size=(1200, 1200), bgcolor=(1.0, 1.0, 1.0))  # Make a new figure (similar to MATLAB)
+
+    if m_data_list is None:
+        m_data_list = []
+
+    n = 0  # We don't know how many objects need drawing
+
+    # # Draw top level
+    # m_data = self.m_data[n] if len(self.m_data) > n else self.m_data.append(None)
+    # self.m_data[n] = draw_satellite_group(self.figure, satellites, m_data=m_data)
+    # n = n + 1
+
+    for ob in satellites.iter_all():
+
+        if isinstance(ob, SatPlane):
+            # We always draw the planes
+            m_data = m_data_list[n] if len(m_data_list) > n else m_data_list.append(None)
+            m_data_list[n] = draw_satellite_plane(figure, ob, m_data=m_data)
+            n = n + 1
+            pass
+        elif isinstance(ob, SatGroup):
+            if ob.parent is None:
+                # If this SatGroup has no parent it is a top-level set and we draw the satellites
+                m_data = m_data_list[n] if len(m_data_list) > n else m_data_list.append(None)
+                m_data_list[n] = draw_satellite_group(figure, ob, m_data=m_data)
+                n = n + 1
+                pass
+        elif isinstance(ob, Satellite):
+            if not isinstance(ob.parent, SatPlane):
+                # If the satellite is not in a plane we draw its orbit traced (see update_satellite)
+                m_data = m_data_list[n] if len(m_data_list) > n else m_data_list.append(None)
+                m_data_list[n] = draw_satellite_trace(figure, ob, m_data=m_data)
                 n = n + 1
 
         else:
@@ -234,20 +350,13 @@ def draw_los_vector(r_a, r_b, color=None, figure=None):
 
 class Visualisation3DGIL(object):
 
-    def __init__(self, scenario):
+    def __init__(self, scenario, figure=None):
         self.scenario = scenario
         self.attractor_actor = None
         self.m_data_sats = []
         self.m_data_analyses = []
-        self.figure = mlab.figure(size=(1200, 1200), bgcolor=(1.0, 1.0, 1.0))  # Make a new figure (similar to MATLAB)
-        # self.figure = fig if (fig is not None) else mlab.figure()
-        # self.figure = None
-
-    def initialize(self, state):
-        """"Initialises the visualisation by drawing objects"""
-        self.draw_attractor(state.attractor)
-        self.m_data_sats = draw_satellites(state.satellites, m_data_list=self.m_data_sats, figure=self.figure)
-        pass
+        self.figure = figure if (figure is not None) else mlab.figure(size=(1200, 1200), bgcolor=(
+            1.0, 1.0, 1.0))
 
     # @mlab.show
     @mlab.animate(delay=50, ui=True)
@@ -264,27 +373,21 @@ class Visualisation3DGIL(object):
             ptime.sleep(1)
             t -= 1
 
-        # self.figure = mlab.figure(size=(1200, 1200), bgcolor=(1.0, 1.0, 1.0))  # Make a new figure (similar to MATLAB)
-
         self.figure.scene.disable_render = True
-        self.initialize(self.scenario.initialize())
+        self.visualise()  # Draw initial picture
         self.figure.scene.disable_render = False
 
         for state in self.scenario.run():
             self.figure.scene.disable_render = True
-            # print("VIS!")
-            self.draw_attractor(state.attractor)
-            self.m_data_sats = draw_satellites(state.satellites, m_data_list=self.m_data_sats, figure=self.figure)
+            self.visualise()  # Draw initial picture
             self.figure.scene.disable_render = False
             yield
-            # import time
-            # time.sleep(.1)
 
     def run(self):
         an = self.animate()
         mlab.show()  # Blocking
 
-    def visualise(self):
+    def visualise(self, show=False):
         self.draw_attractor(self.scenario.state.attractor)
         self.m_data_sats = draw_satellites(self.scenario.state.satellites, m_data_list=self.m_data_sats,
                                            figure=self.figure)
@@ -292,6 +395,9 @@ class Visualisation3DGIL(object):
         for m_data_analysis in self.m_data_analyses:
             m_data_analysis.remove()
         self.m_data_analyses = draw_analysis(self.scenario.state.analyses, draw_nonlos=True, figure=self.figure)
+
+        if show:
+            self.show()
 
     def show(self):
         mlab.show()
@@ -302,6 +408,21 @@ class Visualisation3DGIL(object):
             self.attractor_actor = draw_earth(attractor, self.attractor_actor, self.figure)
         else:
             print("Cannot draw body: %s" % type(attractor).__name__)
+
+
+class Visualisation3DGILChristmas(Visualisation3DGIL):
+
+    def __init__(self, scenario, figure=None):
+        super().__init__(scenario, figure)
+
+    def visualise(self, show=False):
+        self.draw_attractor(self.scenario.state.attractor)
+        self.m_data_sats = draw_satellites_christmas(self.scenario.state.satellites, m_data_list=self.m_data_sats,
+                                                     figure=self.figure)
+
+        for m_data_analysis in self.m_data_analyses:
+            m_data_analysis.remove()
+        self.m_data_analyses = draw_analysis(self.scenario.state.analyses, draw_nonlos=True, figure=self.figure)
 
 
 class Visualisation3D(object):
