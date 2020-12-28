@@ -40,11 +40,13 @@ class Scenario(object):
 
         dt = t - self.state.start
 
+        tof = dt.to(u.s).value
+
         # Propagates attractor
-        self.state.attractor.propagate_to(dt)
+        self.state.attractor.propagate_to(tof)
 
         # Propagate all satellite objects
-        self.state.satellites.propagate_to(dt)
+        self.state.satellites.propagate_to(tof)
 
         # Update tof
         self.state.time = t

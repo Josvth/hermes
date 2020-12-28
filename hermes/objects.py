@@ -66,8 +66,12 @@ class CelestialBody(ScenarioObject):
     def __init__(self, body):
         self.tof_last = None
         self.sphere_actor = None
-        self.rotation = 0 * u.deg
         self.poli_body = body
+        self.rotation_rate = 360 / self.poli_body.rotational_period.to(u.s).value   # Rotational rate [deg/s]
+
+        # State variables
+        self.rotation_deg = 0       # Current rotation [deg]
+
         super().__init__()
 
     # Todo implement
@@ -82,15 +86,17 @@ class CelestialBody(ScenarioObject):
     def initialise(self):
         pass
 
-    def propagate_to(self, t):
+    def propagate_to(self, tof):
+
         if self.tof_last is None:
-            self.tof_last = t
+            self.tof_last = tof
             return
 
-        dt = t - self.tof_last
-        self.tof_last = t
-        drot = dt.to(u.s) * 360 * u.deg / (86164.09 * u.s)  # Todo, make less hardcoded
-        self.rotation = (self.rotation + drot) % (360 * u.deg)
+        dt = tof - self.tof_last
+        self.tof_last = tof
+
+        drot = dt * self.rotation_rate
+        self.rotation_deg = (self.rotation_deg + drot) % 360
 
     def draw(self, figure):
         from tvtk.api import tvtk
@@ -139,7 +145,7 @@ class CelestialBody(ScenarioObject):
         # print("Finished loading Earth")
 
     def draw_update(self, figure):
-        self.sphere_actor.orientation = [0, 0, self.rotation.to(u.deg).value]
+        self.sphere_actor.orientation = [0, 0, self.rotation_deg]
         pass
 
 
@@ -355,10 +361,17 @@ class SatGroup(GroupNode, MutableSequence):
         # precalculate lmn
         self.ll1, self.mm1, self.nn1, self.ll2, self.mm2, self.nn2 = calc_lmn(self.iinc, self.rraan, self.aargp)
 
-    def propagate_to(self, t):
+    def propagate_to(self, tof):
+        """Propagates the simulation to time t
+
+        Parameters
+        ----------
+        tof: float
+            Time of flight in seconds
+        """
 
         # propagate at once
-        nnu = markley_coe(self.kk, self.pp, self.eecc, self.iinc, self.rraan, self.aargp, self.nnu0, t.to(u.s).value)
+        nnu = markley_coe(self.kk, self.pp, self.eecc, self.iinc, self.rraan, self.aargp, self.nnu0, tof)
 
         import numpy.ctypeslib as nc
         # self._xyz, vv = coe2rv(self.k, self.pp, self.eecc, self.iinc, self.rraan, self.aargp, nnu)
@@ -440,7 +453,7 @@ class SatGroup(GroupNode, MutableSequence):
             1-N np.array with the right ascension of the ascending node of each plane.
         aargp : ~astropy.units.Quantity
             1-N np.array with the argument of the pericenter of each plane.
-        nnnu : list 
+        nnnu : list
             n_plane sized list with 1-N np.arrays specifing the mean anomaly of each of the satellites inside the plane.
         epoch : ~astropy.time.Time, optional
             Epoch time
