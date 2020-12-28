@@ -14,6 +14,7 @@ class Scenario(object):
             self.step = step
             self.time = start
             self.tof = time.TimeDelta(0 * u.s)
+            self.tof_s = 0
             self.attractor = attractor
             self.satellites = SatGroup()
             self.analyses = []
@@ -38,19 +39,19 @@ class Scenario(object):
             Time to propagate to.
         """
 
-        dt = t - self.state.start
-
-        tof = dt.to(u.s).value
+        tof = t - self.state.start
+        tof_s = tof.to(u.s).value
 
         # Propagates attractor
-        self.state.attractor.propagate_to(tof)
+        self.state.attractor.propagate_to(tof_s)
 
         # Propagate all satellite objects
-        self.state.satellites.propagate_to(tof)
+        self.state.satellites.propagate_to(tof_s)
 
         # Update tof
         self.state.time = t
-        self.state.tof = dt
+        self.state.tof = tof
+        self.state.tof_s = tof_s
 
     def analyze(self):
         """Runs the analysis for the current state"""
