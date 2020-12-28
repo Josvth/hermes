@@ -31,7 +31,7 @@ sat2.fov_3D_show = True
 scenario.add_satellite(sat1)
 scenario.add_satellite(sat2)
 
-scenario.initialize()
+scenario.initialise()
 
 vis = Visualisation3DGIL(scenario)
 

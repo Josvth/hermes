@@ -56,17 +56,17 @@ class Scenario(object):
             an.run(self.state)
 
     ## Simulation
-    def initialize(self):
+    def initialise(self):
 
         print("Initializing attractor")
-        self.state.attractor.initialize()
+        self.state.attractor.initialise()
 
         print("Initializing %d satellites..." % len(self.state.satellites))
         self.state.satellites.initialize()
 
         for i, an in enumerate(self.state.analyses):
             print("Initializing analysis %d of %d..." % (i + 1, len(self.state.analyses)))
-            an.initialize()
+            an.initialise()
 
         return self.state
 
@@ -93,3 +93,7 @@ class Scenario(object):
     def stop(self):
         pass
 
+    def save(self):
+        """Runs the analysis for the current state"""
+        for i, an in enumerate(self.state.analyses):
+            an.stop()

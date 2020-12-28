@@ -44,7 +44,7 @@ los_analysis.check_fov = False
 scenario.add_analysis(los_analysis)
 
 # Initialize
-scenario.initialize()
+scenario.initialise()
 
 scenario.step_to(point)
 

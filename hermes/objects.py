@@ -42,8 +42,8 @@ class ScenarioObject(ABC):
         return self._xyz_in_m
 
     @abstractmethod
-    def initialize(self):
-        """Allows the object to initialize before simulation/propagation is ran."""
+    def initialise(self):
+        """Allows the object to initialise before simulation/propagation is ran."""
         pass
 
     @abstractmethod
@@ -79,7 +79,7 @@ class CelestialBody(ScenarioObject):
         return 1
 
     # Todo implement
-    def initialize(self):
+    def initialise(self):
         pass
 
     def propagate_to(self, t):
@@ -224,8 +224,8 @@ class GroupNode(ABC):
     def iter_all(self):
         yield self
 
-class Satellite(Orbit, GroupNode):
 
+class Satellite(Orbit, GroupNode):
     # Constraints
     fov = 45 * u.deg  # Nadir pointing FOV
 
@@ -236,13 +236,20 @@ class Satellite(Orbit, GroupNode):
     plane_3D_show = True
     trace_3D_show = False
 
+    # State-vectors
+    rr = []
+    vv = []
+
     def __init__(self, state, epoch):
         super().__init__(state, epoch)
-        self._xyz = self.r  # set the initial position
         self.pos_points = None
 
     def __iter__(self):
         yield self
+
+    def initialise(self, top_node, i):
+        self.rr = top_node.rr[i, :]
+        # self.vv = top_node.vv[top_node.index[self], :] #Todo implement
 
 
 class SatGroup(GroupNode, MutableSequence):
@@ -281,6 +288,9 @@ class SatGroup(GroupNode, MutableSequence):
         return sum([len(child) for child in self._children])
 
     def __getitem__(self, index):
+        # # Todo: This is hack-ish, I should implement a proper tree structure
+        # sat_list = [sat for sat in self]
+        # return sat_list[index]
         return self._children[index]
 
     def __delitem__(self, index):
@@ -340,6 +350,7 @@ class SatGroup(GroupNode, MutableSequence):
             self.aargp[i] = s.argp.to(u.rad).value
             self.nnu0[i] = s.nu.to(u.rad).value
             self.rr[i] = s.r.to(u.m).value
+            s.initialise(self, i)  # Let the satellite reference these state variables
 
         # precalculate lmn
         self.ll1, self.mm1, self.nn1, self.ll2, self.mm2, self.nn2 = calc_lmn(self.iinc, self.rraan, self.aargp)
@@ -459,6 +470,7 @@ class SatGroup(GroupNode, MutableSequence):
 class SatPlane(SatGroup):
     group_type = "plane"
     ref_orbit = None
+
 
 class Constellation(SatGroup):
     group_type = "constellation"

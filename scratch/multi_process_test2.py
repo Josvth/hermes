@@ -10,7 +10,7 @@ from hermes.visualisation import Visualisation3D
 
 def simulation_worker(sec, queue):
 
-    queue.put(sec.initialize())
+    queue.put(sec.initialise())
 
     for state in sec.run():
         queue.put(state)
@@ -72,7 +72,7 @@ if __name__ == '__main__':
 
     from timeit import default_timer as timer
 
-    q.put(scenario.initialize())
+    q.put(scenario.initialise())
     t_sim_step = timer()
     for state in scenario.run():
         t_sim_step = timer()

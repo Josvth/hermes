@@ -5,11 +5,14 @@ from timeit import default_timer as timer
 
 import astropy
 from mayavi import mlab
+from tqdm import tqdm
 
 from hermes.objects import SatGroup
 
 import numpy as np
 from astropy import units as u
+
+from hermes.visualisation import Visualisation3DGIL
 
 SIMULATION_SCALE = u.km
 
@@ -61,14 +64,14 @@ class Scenario(object):
 
         for i, ob in enumerate(self.objects):
             print("Initializing object %d of %d..." % (i + 1, len(self.objects)))
-            ob.initialize()
+            ob.initialise()
 
         print("Initializing %d satellites..." % len(self.sat_group))
         self.sat_group.initialize()
 
         for i, an in enumerate(self.analyses):
             print("Initializing analysis %d of %d..." % (i + 1, len(self.analyses)))
-            an.initialize()
+            an.initialise()
 
     def propagate_to(self, t, draw_update=False):
         """Propagates the simulation to time t
@@ -197,3 +200,31 @@ class Scenario(object):
 
         for an in self.analyses:
             an.stop()
+
+
+class Simulation(object):
+
+    def __init__(self, scenario, show_3d=True):
+
+        self.scenario = scenario
+
+        if show_3d:
+            self.vis_3D = Visualisation3DGIL(state_generator=self.step())
+        else:
+            self.vis_3D = None
+
+    def step(self):
+        yield from self.scenario.run()
+
+        # After scenario has completely ran save it
+        print('Simulation ended. Saving...')
+        self.scenario.save()
+
+    def run(self):
+        if self.vis_3D is None:
+            total_s = (self.scenario.state.stop - self.scenario.state.start).to(u.s).value
+            step_s = self.scenario.state.step.value
+            for state in tqdm(self.scenario.run(), total=int(total_s / step_s), desc='Simulation progress'):
+                pass
+        else:
+            self.vis_3D.run()   # We do everything in the animation loop

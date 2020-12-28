@@ -11,7 +11,7 @@ from hermes.visualisation import Visualisation3D, Visualisation3DGIL
 
 def simulation_worker(sec, queue):
 
-    queue.put(sec.initialize())
+    queue.put(sec.initialise())
 
     for state in sec.run():
         queue.put(state)

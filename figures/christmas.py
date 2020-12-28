@@ -87,7 +87,7 @@ scenario.add_satellite(red)
 scenario.add_satellite(green)
 
 # Initialize
-scenario.initialize()
+scenario.initialise()
 
 #scenario.step_to(point)
 

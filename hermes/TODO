@@ -1,2 +1,9 @@
 - Allow color to be specified ad RGB + Alpha
 - Make satellite.parent.r_of(satellite) a prettier syntax
+- Rotation of the Earth at Epoch
+- Let satellites have a state instead of extending an orbit
+-- Bonus points for making the state relate to that of the parent
+-- Probably best to create a 'DependClassicalState' that has pointers to the parent
+- Specify time step by a TimeDelta
+- Move time instances from Scenario to Simulation ::grin::
+- Implement a better tree data structure (i.e. Anytree or Treelib)

@@ -51,8 +51,8 @@ def draw_satellite_fov(figure, satellite, m_data=None):
     else:
         m_data.mlab_source.trait_set(x=origin[0], y=origin[1], z=origin[2],
                                      u=tip[0], v=tip[1], w=tip[2])
-        m_data.glyph.glyph_source.glyph_source.angle = satellite.fov.to(u.deg).value  # Reset these just in case
-        m_data.actor.actor.property.opacity = satellite.fov_3D_opacity  # Reset these just in case
+        # m_data.glyph.glyph_source.glyph_source.angle = satellite.fov.to(u.deg).value  # Reset these just in case
+        # m_data.actor.actor.property.opacity = satellite.fov_3D_opacity  # Reset these just in case
 
     return m_data
 
@@ -281,7 +281,7 @@ def draw_satellites_christmas(satellites, m_data_list=None, figure=None):
         if isinstance(ob, SatPlane):
             # We always draw the planes
             m_data = m_data_list[n] if len(m_data_list) > n else m_data_list.append(None)
-            m_data_list[n] = draw_satellite_plane(figure, ob, m_data=m_data)
+            m_data_list[n] = draw_orbit(figure, ob, ob.color, m_data=m_data)
             n = n + 1
             pass
         elif isinstance(ob, SatGroup):
@@ -304,7 +304,7 @@ def draw_satellites_christmas(satellites, m_data_list=None, figure=None):
     return m_data_list
 
 
-def draw_analysis(analyses, draw_los=True, draw_nonlos=False, figure=None):
+def draw_analysis(analyses, figure=None):
     if figure is None:
         figure = mlab.figure(size=(1200, 1200), bgcolor=(1.0, 1.0, 1.0))  # Make a new figure (similar to MATLAB)
 
@@ -312,16 +312,15 @@ def draw_analysis(analyses, draw_los=True, draw_nonlos=False, figure=None):
 
     for analysis in analyses:
         if isinstance(analysis, LOSAnalysis):
-            los = analysis.los
-
             # draw line-of-sight vectors
-            if draw_los:
-                for r_b_los in analysis.rr_b[analysis.los, :]:
-                    m_data.append(draw_los_vector(analysis.r_a, r_b_los, color=hex2rgb('#01FF70'), figure=figure))
+            if analysis.show_los:
+                for r_b in analysis.rr_b[analysis.los, :]:
+                    m_data.append(draw_los_vector(analysis.r_a, r_b, color=hex2rgb('#01FF70'), figure=figure))
 
-            if draw_nonlos:
-                for r_b_los in analysis.rr_b[~analysis.los, :]:
-                    m_data.append(draw_los_vector(analysis.r_a, r_b_los, color=hex2rgb('#c3312f'), figure=figure))
+            # draw no line-of-sight vectors
+            if analysis.show_nolos:
+                for r_b in analysis.rr_b[~analysis.los, :]:
+                    m_data.append(draw_los_vector(analysis.r_a, r_b, color=hex2rgb('#c3312f'), figure=figure))
 
     return m_data
 
@@ -345,14 +344,16 @@ def draw_los_vector(r_a, r_b, color=None, figure=None):
     y[1] = r_b[1] * u.m.to(SCALE_UNIT)
     z[1] = r_b[2] * u.m.to(SCALE_UNIT)
 
-    return mlab.plot3d(x, y, z, tube_radius=TUBE_RADIUS, color=color, figure=figure)
+    return mlab.plot3d(x, y, z, tube_radius=TUBE_RADIUS, color=color, figure=figure, reset_zoom=False)
 
 
 class Visualisation3DGIL(object):
 
-    def __init__(self, scenario, figure=None):
-        self.scenario = scenario
+    def __init__(self, state_generator=None, figure=None):
+
+        self.state_generator = state_generator
         self.attractor_actor = None
+
         self.m_data_sats = []
         self.m_data_analyses = []
         self.figure = figure if (figure is not None) else mlab.figure(size=(1200, 1200), bgcolor=(
@@ -364,22 +365,19 @@ class Visualisation3DGIL(object):
 
         import time as ptime
 
-        print("Starting in:")
+        print("Starting in: ", end="")
         t = 5
         while t:
             mins, secs = divmod(t, 60)
-            timer = '{:02d}:{:02d}'.format(mins, secs)
+            timer = 'Starting in: {:02d}:{:02d}'.format(mins, secs)
             print(timer, end="\r")
             ptime.sleep(1)
             t -= 1
+        print(timer)
 
-        self.figure.scene.disable_render = True
-        self.visualise()  # Draw initial picture
-        self.figure.scene.disable_render = False
-
-        for state in self.scenario.run():
+        for state in self.state_generator:
             self.figure.scene.disable_render = True
-            self.visualise()  # Draw initial picture
+            self.visualise(state)  # Draw initial picture
             self.figure.scene.disable_render = False
             yield
 
@@ -387,14 +385,15 @@ class Visualisation3DGIL(object):
         an = self.animate()
         mlab.show()  # Blocking
 
-    def visualise(self, show=False):
-        self.draw_attractor(self.scenario.state.attractor)
-        self.m_data_sats = draw_satellites(self.scenario.state.satellites, m_data_list=self.m_data_sats,
+    def visualise(self, state, show=False):
+
+        self.draw_attractor(state.attractor)
+        self.m_data_sats = draw_satellites(state.satellites, m_data_list=self.m_data_sats,
                                            figure=self.figure)
 
         for m_data_analysis in self.m_data_analyses:
             m_data_analysis.remove()
-        self.m_data_analyses = draw_analysis(self.scenario.state.analyses, draw_nonlos=True, figure=self.figure)
+        self.m_data_analyses = draw_analysis(state.analyses, figure=self.figure)
 
         if show:
             self.show()
@@ -422,7 +421,7 @@ class Visualisation3DGILChristmas(Visualisation3DGIL):
 
         for m_data_analysis in self.m_data_analyses:
             m_data_analysis.remove()
-        self.m_data_analyses = draw_analysis(self.scenario.state.analyses, draw_nonlos=True, figure=self.figure)
+        self.m_data_analyses = draw_analysis(self.scenario.state.analyses, figure=self.figure)
 
 
 class Visualisation3D(object):
