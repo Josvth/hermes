@@ -206,12 +206,27 @@ class AccessAnalysis(Analysis):
 
 class LOSAnalysis(Analysis):
 
+    # Settings
+    check_block = True
+    check_fov = True
+
+    # State variables
+    previous_los = []
+    los = []
+
+    # Visualisation variables
     show_los = True
     show_nolos = False
 
+    # Storage
+    contact_instances = []
+    pass_counter = 0
+
+    # Constants
+    BUFFER_SIZE = 1000
+
     def __init__(self, scenario, obj_a, obj_b):
 
-        self.current_opportunities = {}
         self.scenario = scenario
         self.obj_a = obj_a
         self.obj_b = obj_b
@@ -221,15 +236,10 @@ class LOSAnalysis(Analysis):
         self.r_a = None   # This is a 'pointer' to the state vectors in the simulations SatGroup [m]
         self.rr_b = None  # This is a 'pointer' to the state vectors in the simulations SatGroup [m]
 
-        self.check_block = True
-        self.check_fov = True
-
-        # State variables
-        self.previous_los = []
-        self.los = []
-
-        # Storage
-        self.opportunities = []
+        # Build storage
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+        self.store = pd.HDFStore("%s.h5" % timestamp)
 
         super().__init__()
 
@@ -271,6 +281,10 @@ class LOSAnalysis(Analysis):
 
     def initialise(self):
 
+        # Reset storage
+        self.contact_instances = []
+        self.pass_counter = 0
+
         # Generate a list of FOVs
         self.ffov = np.zeros((self._obj_b_slice.stop - self._obj_b_slice.start,))
         for i, s in enumerate(self._obj_b):
@@ -285,7 +299,7 @@ class LOSAnalysis(Analysis):
         self.previous_los = [False] * len(self.los)
 
         # Store line-of-sights
-        self.store_los()
+        self.generate_instances()
 
         super().initialise()
 
@@ -317,42 +331,51 @@ class LOSAnalysis(Analysis):
         #     # Append to current access list
         #     self.current_access_instants.append(ai)
 
-    def store_los(self):
+    def generate_instances(self):
 
         for i in range(len(self.los)):
+
             started = not self.previous_los[i] and self.los[i]
             in_pass = self.los[i]
             ended = self.previous_los[i] and not self.los[i]
-            strand_name = "sat-%d to sat-%d" % (self._obj_a_slice.start, self._obj_b_slice.start + i)
-            tof_s = self.scenario.state.tof.to(u.s).value
 
             if started:
-                self.current_opportunities[strand_name] = {
-                    'strand_name': strand_name,
-                    'r_a': [],
-                    'r_b': [],
-                    'time': [],
-                    'tof': [],
-                    'start_tof': tof_s,
-                    'stop_tof': None,
-                }
+                self.pass_counter = self.pass_counter + 1
 
             if in_pass:
-                sat_pass = self.current_opportunities[strand_name]
+                # Store instance
+                strand_name = "sat-%d to sat-%d" % (self._obj_a_slice.start, self._obj_b_slice.start + i)
 
-                # Append data to pass
-                sat_pass['r_a'].append(self.r_a)
-                sat_pass['r_b'].append(self.rr_b[i])
-                sat_pass['time'].append(str(self.scenario.state.time))
-                sat_pass['tof'].append(tof_s)
+                tof_s = self.scenario.state.tof_s
+                timestamp = str(self.scenario.state.time)
+
+                r_a_x, r_a_y, r_a_z = self.r_a      # Decompose because its easier to append in Pandas/HDF5/CSV
+                r_b_x, r_b_y, r_b_z = self.rr_b[i]  # Decompose because its easier to append in Pandas/HDF5/CSV
+
+                # Todo store velocities
+
+                contact_instance = {
+                    'strand_name': strand_name,
+                    'tof': tof_s,
+                    'r_a_x': r_a_x, 'r_a_y': r_a_y, 'r_a_z': r_a_z,
+                    'r_b_x': r_b_x, 'r_b_y': r_b_y, 'r_b_z': r_b_z,
+                    'time': timestamp,
+                }
+
+                self.contact_instances.append(contact_instance)
+
+                if len(self.contact_instances) >= self.BUFFER_SIZE:
+                    self.store_instances()
+                    self.contact_instances = []
 
             if ended:
-                sat_pass = self.current_opportunities.pop(strand_name)
-                sat_pass['stop_tof'] = tof_s
+                pass
 
-                # Append passes to file
-                self.opportunities.append(sat_pass)
-                #self.hdf.append('contact_opportunities', pd.DataFrame(sat_pass))
+    def store_instances(self):
+        #print("Making data frame... (this might take some time)")
+        df_contact_instances = pd.DataFrame(self.contact_instances)
+        #print("Appending data frame to hdf5... (this might take some time)")
+        self.store.append('contact_instances', df_contact_instances)
 
     def run(self, tof):
         """
@@ -362,20 +385,12 @@ class LOSAnalysis(Analysis):
         time_delta : ~astropy.time.TimeDelta
         """
 
-        # Clear all accesses we had in this window
-        self.current_access_instants = []
-
-        # Find new accesses and append to our list of accesses
+        # Find new accesses
         self.previous_los = self.los
         self.find_los()
 
         # Store line-of-sights
-        self.store_los()
-
-        # Export to CSV
-        if self._csv_file is not None:
-            for ai in self.current_access_instants:
-                self._csv_writer.writerow(ai.to_csv_row(self.scenario.epoch))
+        self.generate_instances()
 
     def draw(self, figure):
 
@@ -406,12 +421,23 @@ class LOSAnalysis(Analysis):
         self.mlab_points.mlab_source.trait_set(x=x, y=y, z=z)
 
     def stop(self):
+        self.store_instances()
 
-        for opportunity in self.current_opportunities:
-            opportunity['stop_tof'].append(self.scenario.state.tof.to(u.s).value)
 
-            # Append passes to file
-            self.opportunities.append(opportunity)
+        # print("Making data frame... (this might take some time)")
+        # df_contact_instances = pd.DataFrame(self.contact_instances)
+        #
+        # from datetime import datetime
+        # timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+        #
+        # print("Writing data frame to pickle... (this might take some time)")
+        # df_contact_instances.to_pickle("%s.pickle" % timestamp)
 
-        opportunities_df = pd.DataFrame(self.opportunities)
-        opportunities_df.to_pickle('test.pickle')
+        # for opportunity in self.current_opportunities:
+        #     opportunity['stop_tof'].append(self.scenario.state.tof.to(u.s).value)
+        #
+        #     # Append passes to file
+        #     self.opportunities.append(opportunity)
+        #
+        # opportunities_df = pd.DataFrame(self.opportunities)
+        # opportunities_df.to_pickle('test.pickle')
