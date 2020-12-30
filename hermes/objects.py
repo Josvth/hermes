@@ -10,7 +10,7 @@ from scipy.constants import kilo
 from astropy import time, units as u
 import numpy as np
 
-from hermes.propagation import markley_coe
+from hermes.propagation import markley_coe, secular_rates_J2, pqw_to_eci, pqw_to_ijk_vectors
 
 from hermes.util import calc_lmn, coe2xyz_fast, hex2rgb
 from collections import MutableSequence
@@ -67,10 +67,10 @@ class CelestialBody(ScenarioObject):
         self.tof_last = None
         self.sphere_actor = None
         self.poli_body = body
-        self.rotation_rate = 360 / self.poli_body.rotational_period.to(u.s).value   # Rotational rate [deg/s]
+        self.rotation_rate = 360 / self.poli_body.rotational_period.to(u.s).value  # Rotational rate [deg/s]
 
         # State variables
-        self.rotation_deg = 0       # Current rotation [deg]
+        self.rotation_deg = -45  # Current rotation [deg]
 
         super().__init__()
 
@@ -211,6 +211,11 @@ Earth = _EarthObject()
 class GroupNode(ABC):
     _color = hex2rgb('#00ffff')
     parent = None
+    name = 'node'
+
+    def __init__(self, **kwargs):
+        if 'name' in kwargs:
+            self.name = kwargs['name']
 
     def __len__(self):
         return 1
@@ -230,8 +235,18 @@ class GroupNode(ABC):
     def iter_all(self):
         yield self
 
+    def prefixed_name(self):
+        if self.parent is not None and self.parent.parent is not None: # If parent that is not root, add prefix
+            return self.parent.prefixed_name() + "-" + self.name
+        else:
+            return self.name
+
 
 class Satellite(Orbit, GroupNode):
+
+    # Propagator options
+    J2_perturbation = False     # If true applies J2 secular rates perturbation during propagation
+
     # Constraints
     fov = 45 * u.deg  # Nadir pointing FOV
 
@@ -241,14 +256,18 @@ class Satellite(Orbit, GroupNode):
 
     plane_3D_show = True
     trace_3D_show = False
+    trace_3D_length = 10000
 
     # State-vectors
     rr = []
     vv = []
 
-    def __init__(self, state, epoch):
+    #prefixed_name = ""
+
+    def __init__(self, state, epoch, name="sat"):
         super().__init__(state, epoch)
         self.pos_points = None
+        self.name = name
 
     def __iter__(self):
         yield self
@@ -256,20 +275,22 @@ class Satellite(Orbit, GroupNode):
     def initialise(self, top_node, i):
         self.rr = top_node.rr[i, :]
         # self.vv = top_node.vv[top_node.index[self], :] #Todo implement
+        #self.prefixed_name = self.prefixed_name()
 
 
 class SatGroup(GroupNode, MutableSequence):
 
     # ToDo add a parent to this tree structure?
-    def __init__(self, *children: list, group_type="group"):
-        super().__init__()
+    def __init__(self, *children: list, group_type="group", **kwargs):
+        super().__init__(**kwargs)
         self._children = list(children)
 
         self._group_type = group_type
 
         #  Empty fields
         self.rr = 0
-        self.k = 0
+        self.vv = 0
+        self.kk = 0
         self.pp = 0
         self.eecc = 0
         self.iinc = 0
@@ -283,6 +304,9 @@ class SatGroup(GroupNode, MutableSequence):
         self.ll2 = 0
         self.mm2 = 0
         self.nn2 = 0
+
+        self.JJ2 = 0
+        self.RRbody = 0
 
         self.colors = []
 
@@ -337,6 +361,7 @@ class SatGroup(GroupNode, MutableSequence):
         # Store satellite parameters
         N = len(self)
         self.rr = np.zeros((N, 3))
+        self.vv = np.zeros((N, 3))
 
         self.kk = np.zeros(N)
         self.pp = np.zeros(N)
@@ -345,6 +370,10 @@ class SatGroup(GroupNode, MutableSequence):
         self.rraan = np.zeros(N)
         self.aargp = np.zeros(N)
         self.nnu0 = np.zeros(N)
+
+        self.JJ2 = np.zeros(N)
+        self.RRbody = np.zeros(N)
+        self.pperturbate = np.zeros(N)
 
         # generate vectors
         for i, s in enumerate(self):
@@ -356,6 +385,13 @@ class SatGroup(GroupNode, MutableSequence):
             self.aargp[i] = s.argp.to(u.rad).value
             self.nnu0[i] = s.nu.to(u.rad).value
             self.rr[i] = s.r.to(u.m).value
+            self.vv[i] = s.r.to(u.m).value
+
+            # Constants needed to calculate raan walk by J2 perturbation
+            self.JJ2[i] = s.attractor.J2.value
+            self.RRbody[i] = s.attractor.R_mean.to(u.m).value
+            self.pperturbate[i] = 1.0 if s.J2_perturbation else 0.0
+
             s.initialise(self, i)  # Let the satellite reference these state variables
 
         # precalculate lmn
@@ -370,17 +406,29 @@ class SatGroup(GroupNode, MutableSequence):
             Time of flight in seconds
         """
 
-        # propagate at once
-        nnu = markley_coe(self.kk, self.pp, self.eecc, self.iinc, self.rraan, self.aargp, self.nnu0, tof)
+        # Calculate secular rates from epoch
+        drraan, daargp, dnnu = secular_rates_J2(self.kk, self.pp, self.eecc, self.iinc, self.rraan, self.aargp, self.nnu0, self.JJ2, self.RRbody)
 
-        import numpy.ctypeslib as nc
+        # Apply to perturbed satellites
+        rraan = self.rraan + self.pperturbate * drraan * tof
+        aargp = self.aargp + self.pperturbate * daargp * tof
+        nnu0 = self.nnu0 + self.pperturbate * dnnu * tof
+
+        # propagate at once
+        nnu = markley_coe(self.kk, self.pp, self.eecc, self.iinc, rraan, aargp, nnu0, tof)
+
+        ppi, ppj, ppk, qqi, qqj, qqk, wwi, wwj, wwk = pqw_to_ijk_vectors(self.iinc, rraan, aargp)
+
+        #import numpy.ctypeslib as nc
         # self._xyz, vv = coe2rv(self.k, self.pp, self.eecc, self.iinc, self.rraan, self.aargp, nnu)
         # self._xyz = self._xyz * u.m
 
         # self._xyz = coe2xyz(self.k, self.pp, self.eecc, self.iinc, self.rraan, self.aargp, nnu) * u.m
         # self.xyz_in_m = coe2xyz_fast(self.pp, self.eecc, self.ll1, self.mm1, self.nn1, self.ll2, self.mm2, self.nn2,
         #                              nnu)
-        coe2xyz_fast(self.rr, self.pp, self.eecc, self.ll1, self.mm1, self.nn1, self.ll2, self.mm2, self.nn2, nnu)
+        #coe2xyz_fast(self.rr, self.pp, self.eecc, self.ll1, self.mm1, self.nn1, self.ll2, self.mm2, self.nn2, nnu)
+
+        pqw_to_eci(self.rr, self.vv, self.kk, self.pp, self.eecc, nnu, ppi, ppj, ppk, qqi, qqj, qqk, wwi, wwj, wwk)
 
     # Satellite mutations
     @GroupNode.color.setter
@@ -395,7 +443,7 @@ class SatGroup(GroupNode, MutableSequence):
 
     @classmethod
     @u.quantity_input(a=u.m, ecc=u.one, inc=u.rad, raan=u.rad, argp=u.rad, nu=u.rad)
-    def as_plane(cls, attractor, a, ecc, inc, raan, argp, nnu, epoch=J2000, plane=Planes.EARTH_EQUATOR):
+    def as_plane(cls, attractor, a, ecc, inc, raan, argp, nnu, epoch=J2000, plane=Planes.EARTH_EQUATOR, name='plane'):
         """
 
         Parameters
@@ -418,9 +466,11 @@ class SatGroup(GroupNode, MutableSequence):
             Epoch time
         plane : ~poliastro.frames.Planes, optional
             Fundamental plane of the frame.
+        name : str
+            A human readable name for this plane
         """
 
-        group = SatPlane()
+        group = SatPlane(name=name)
         group.ref_orbit = Orbit.from_classical(attractor, a, ecc, inc, raan, argp, 0 * u.deg, epoch, plane)
 
         n_sat = len(nnu)
@@ -436,7 +486,7 @@ class SatGroup(GroupNode, MutableSequence):
 
     @classmethod
     @u.quantity_input(a=u.m, ecc=u.one, inc=u.rad, rraan=u.rad, argp=u.rad)
-    def as_set(cls, attractor, a, ecc, inc, rraan, aargp, nnnu, epoch=J2000, plane=Planes.EARTH_EQUATOR):
+    def as_set(cls, attractor, a, ecc, inc, rraan, aargp, nnnu, epoch=J2000, plane=Planes.EARTH_EQUATOR, name='set'):
         """
 
         Parameters
@@ -467,12 +517,14 @@ class SatGroup(GroupNode, MutableSequence):
 
         n_plane = len(rraan)
 
-        group = SatGroup()
+        group = SatGroup(name=name)
         group._group_type = "set"
+
+        pad_length = int(np.ceil(np.log10(n_plane)))
 
         for i_p in range(n_plane):
             group_plane = cls.as_plane(attractor, a, ecc, inc, rraan[i_p], aargp[i_p], np.squeeze(nnnu[i_p]), epoch,
-                                       plane)
+                                       plane, name='plane{i_p:0{pad_length}}'.format(i_p=i_p, pad_length=pad_length))
             group_plane.parent = group
             # Todo do parenting in append?
             group.append(group_plane)
