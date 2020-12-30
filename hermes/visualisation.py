@@ -58,35 +58,27 @@ def draw_satellite_fov(figure, satellite, m_data=None):
 
 
 def draw_satellite(figure, satellite, m_data=None):
-    if m_data is None:  # Make new line
+    m_data_plane = m_data['plane'] if m_data is not None and 'plane' in m_data else None
+    m_data_trace = m_data['trace'] if m_data is not None and 'trace' in m_data else None
+    m_data_fov = m_data['fov'] if m_data is not None and 'fov' in m_data else None
 
-        m_data_plane = draw_orbit(figure, satellite, satellite.color) if satellite.plane_3D_show else None
-        m_data_trace = draw_satellite_trace(figure, satellite) if satellite.trace_3D_show else None
-        m_data_fov = draw_satellite_fov(figure, satellite) if satellite.fov_3D_show else None
+    if satellite.plane_3D_show:
+        m_data_plane = draw_orbit(figure, satellite, satellite.color, m_data=m_data_plane)
+    elif m_data_plane is not None:
+        m_data_plane.remove()
+        m_data_plane = None
 
-    else:
+    if satellite.trace_3D_show:
+        m_data_trace = draw_satellite_trace(figure, satellite, m_data=m_data_trace)
+    elif m_data_trace is not None:
+        m_data_trace.remove()
+        m_data_trace = None
 
-        m_data_plane = m_data['plane']
-        m_data_trace = m_data['trace']
-        m_data_fov = m_data['fov']
-
-        if satellite.plane_3D_show:
-            m_data_plane = draw_orbit(figure, satellite, satellite.color, m_data=m_data_plane)
-        elif m_data_plane is not None:
-            m_data_plane.remove()
-            m_data_plane = None
-
-        if satellite.trace_3D_show:
-            m_data_trace = draw_satellite_trace(figure, satellite, m_data=m_data_trace)
-        elif m_data_trace is not None:
-            m_data_trace.remove()
-            m_data_trace = None
-
-        if satellite.fov_3D_show:
-            m_data_fov = draw_satellite_fov(figure, satellite, m_data=m_data_fov)
-        elif m_data_fov is not None:
-            m_data_fov.remove()
-            m_data_fov = None
+    if satellite.fov_3D_show:
+        m_data_fov = draw_satellite_fov(figure, satellite, m_data=m_data_fov)
+    elif m_data_fov is not None:
+        m_data_fov.remove()
+        m_data_fov = None
 
     m_data = {'plane': m_data_plane, 'trace': m_data_trace, 'fov': m_data_fov}
 
@@ -103,16 +95,16 @@ def draw_satellite_trace(figure, satellite, m_data=None):
         xx = np.insert(m_data.mlab_source.x, 0, x)
         yy = np.insert(m_data.mlab_source.y, 0, y)
         zz = np.insert(m_data.mlab_source.z, 0, z)
-        if len(xx) == TRAILING + 1:
+        if len(xx) == satellite.trace_3D_length + 1:
             # Roll trail
             m_data.mlab_source.trait_set(x=xx[:-1], y=yy[:-1], z=zz[:-1])
         else:
 
             # Set lookup table
-            r = np.linspace(satellite.color[0], 1, TRAILING)
-            g = np.linspace(satellite.color[1], 1, TRAILING)
-            b = np.linspace(satellite.color[2], 1, TRAILING)
-            a = np.linspace(1, 0, TRAILING)
+            r = np.linspace(satellite.color[0], 1, satellite.trace_3D_length)
+            g = np.linspace(satellite.color[1], 1, satellite.trace_3D_length)
+            b = np.linspace(satellite.color[2], 1, satellite.trace_3D_length)
+            a = np.linspace(1, 0, satellite.trace_3D_length)
             colors = np.array([r, g, b, a]).T
             m_data.module_manager.scalar_lut_manager.lut.number_of_colors = len(xx)
             m_data.module_manager.scalar_lut_manager.lut.table = colors[-len(xx):, :] * 255
@@ -215,7 +207,7 @@ def draw_earth(attractor, actor=None, figure=None):
         figure.scene.add_actor(actor)
 
     else:
-        actor.orientation = [0, 0, attractor.rotation.to(u.deg).value]
+        actor.orientation = [0, 0, attractor.rotation_deg]
 
     return actor
 
