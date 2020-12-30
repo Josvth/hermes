@@ -19,9 +19,10 @@ class Scenario(object):
             self.satellites = SatGroup()
             self.analyses = []
 
-    def __init__(self, start, stop, step, attractor):
+    def __init__(self, start, stop, step, attractor, name="Scenario"):
         # Scenario state
         self.state = Scenario.State(start, stop, step, attractor)
+        self.name = name
 
     def add_satellite(self, satellite):
         self.state.satellites.append(satellite)
