@@ -205,7 +205,6 @@ class AccessAnalysis(Analysis):
 
 
 class LOSAnalysis(Analysis):
-
     # Settings
     check_block = True
     check_fov = True
@@ -213,35 +212,37 @@ class LOSAnalysis(Analysis):
     # State variables
     previous_los = []
     los = []
+    pass_number = []
+    instance_counters = []  # Counts the number of instances (n) in a pass for each of the pairs
 
     # Visualisation variables
     show_los = True
     show_nolos = False
 
     # Storage
-    contact_instances = []
-    pass_counter = 0
+    contact_instances = {}  # Dict having key (p, n) and the contact instance
+    pass_counter = 0  # Counts the number of passes (p)
 
     # Constants
     BUFFER_SIZE = 1000
 
-    def __init__(self, scenario, obj_a, obj_b):
+    def __init__(self, scenario, obj_a, obj_b, name='LOSAnalysis'):
 
         self.scenario = scenario
         self.obj_a = obj_a
         self.obj_b = obj_b
 
-        self.ffov = None    # Field-of-views [rad]
+        self.ffov = None  # Field-of-views [rad]
         self.R_body = scenario.state.attractor.poli_body.R_mean.to(u.m).value  # Radius of attractor [m]
-        self.r_a = None   # This is a 'pointer' to the state vectors in the simulations SatGroup [m]
+        self.r_a = None  # This is a 'pointer' to the state vectors in the simulations SatGroup [m]
         self.rr_b = None  # This is a 'pointer' to the state vectors in the simulations SatGroup [m]
 
-        # Build storage
-        from datetime import datetime
-        timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-        self.store = pd.HDFStore("%s.h5" % timestamp)
+        self.name = name
 
         super().__init__()
+
+    def _generate_name(self):
+        return "LOSAnalysis_%s_to_%s" % (self.obj_a.prefixed_name(), self.obj_b.prefixed_name())
 
     @property
     def obj_a(self):
@@ -281,8 +282,15 @@ class LOSAnalysis(Analysis):
 
     def initialise(self):
 
+        # Generate storage file
+        self.name = self._generate_name()
+
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        self.store = pd.HDFStore("%s_%s_%s.h5" % (self.scenario.name, self.name, timestamp))
+
         # Reset storage
-        self.contact_instances = []
+        self.contact_instances = {}
         self.pass_counter = 0
 
         # Generate a list of FOVs
@@ -297,6 +305,8 @@ class LOSAnalysis(Analysis):
         # Find access at initial time point
         self.find_los()
         self.previous_los = [False] * len(self.los)
+        self.pass_number = [-1] * (self._obj_b_slice.stop - self._obj_b_slice.start)
+        self.instance_counters = [0] * (self._obj_b_slice.stop - self._obj_b_slice.start)
 
         # Store line-of-sights
         self.generate_instances()
@@ -340,41 +350,49 @@ class LOSAnalysis(Analysis):
             ended = self.previous_los[i] and not self.los[i]
 
             if started:
-                self.pass_counter = self.pass_counter + 1
+                self.pass_counter = self.pass_counter + 1  # Increment pass counter
+                self.pass_number[i] = self.pass_counter  # Set the number of the pass counter of this pair
+                self.instance_counters[i] = 0  # Set the instance counter for this pair to zero
 
             if in_pass:
+
                 # Store instance
-                strand_name = "sat-%d to sat-%d" % (self._obj_a_slice.start, self._obj_b_slice.start + i)
+                strand_name = "%s to %s" % (self._obj_a_slice.start, self._obj_b_slice.start + i)
 
                 tof_s = self.scenario.state.tof_s
                 timestamp = str(self.scenario.state.time)
 
-                r_a_x, r_a_y, r_a_z = self.r_a      # Decompose because its easier to append in Pandas/HDF5/CSV
+                r_a_x, r_a_y, r_a_z = self.r_a  # Decompose because its easier to append in Pandas/HDF5/CSV
                 r_b_x, r_b_y, r_b_z = self.rr_b[i]  # Decompose because its easier to append in Pandas/HDF5/CSV
 
                 # Todo store velocities
 
                 contact_instance = {
                     'strand_name': strand_name,
+                    #'p': self.pass_number[i],
+                    #'n': self.instance_counters[i],
                     'tof': tof_s,
                     'r_a_x': r_a_x, 'r_a_y': r_a_y, 'r_a_z': r_a_z,
                     'r_b_x': r_b_x, 'r_b_y': r_b_y, 'r_b_z': r_b_z,
-                    'time': timestamp,
+                    'time': timestamp
                 }
 
-                self.contact_instances.append(contact_instance)
+                self.contact_instances[(self.pass_number[i], self.instance_counters[i])] = contact_instance
 
                 if len(self.contact_instances) >= self.BUFFER_SIZE:
                     self.store_instances()
-                    self.contact_instances = []
+                    self.contact_instances = {}
+
+                self.instance_counters[i] = self.instance_counters[i] + 1  # Increment instance counter
 
             if ended:
                 pass
 
     def store_instances(self):
-        #print("Making data frame... (this might take some time)")
-        df_contact_instances = pd.DataFrame(self.contact_instances)
-        #print("Appending data frame to hdf5... (this might take some time)")
+        # print("Making data frame... (this might take some time)")
+        mix = pd.MultiIndex.from_tuples(self.contact_instances.keys(), names=('p', 'n'))
+        df_contact_instances = pd.DataFrame(list(self.contact_instances.values()), index=mix)
+        # print("Appending data frame to hdf5... (this might take some time)")
         self.store.append('contact_instances', df_contact_instances)
 
     def run(self, tof):
@@ -422,7 +440,6 @@ class LOSAnalysis(Analysis):
 
     def stop(self):
         self.store_instances()
-
 
         # print("Making data frame... (this might take some time)")
         # df_contact_instances = pd.DataFrame(self.contact_instances)
