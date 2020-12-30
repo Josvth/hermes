@@ -8,9 +8,24 @@ from poliastro.core.angles import _kepler_equation, _kepler_equation_prime, E_to
 
 import numpy as np
 
+
+@njit
+def secular_rates_J2(k, p, ecc, inc, raan, argp, nu, J2, Rbody):
+    """ Returns the first order secular rates of change dΩ/dt, dω/dt and dθ/dt by J2 perturbation """
+
+    a = p / (1 - ecc ** 2)
+    n = np.sqrt(k / a ** 3)
+
+    # From Howard, Curtis (eq 10.93b-d) or AE4874 (eq. 23.35) and AE4874 (eq. 23.27)
+    draan = -3 / 2 * J2 * n * (Rbody / p) ** 2 * np.cos(inc)
+    dargp = 3 / 2 * J2 * (n / 2) * (Rbody / p) ** 2 * (5 * cos(inc) ** 2 - 1)
+    dnu = n * (1 + 3 / 4 * J2 * (Rbody / p) ** 2 * (1 - 3 * cos(inc) ** 2))
+
+    return draan, dargp, dnu
+
+
 @njit
 def markley_coe(k, p, ecc, inc, raan, argp, nu, tof):
-
     M0 = E_to_M(nu_to_E(nu, ecc), ecc)
     a = p / (1 - ecc ** 2)
     n = np.sqrt(k / a ** 3)
@@ -48,13 +63,14 @@ def markley_coe(k, p, ecc, inc, raan, argp, nu, tof):
     delta3 = -f0 / (f1 - 0.5 * f0 * f2 / f1)
     delta4 = -f0 / (f1 + 0.5 * delta3 * f2 + 1 / 6 * delta3 ** 2 * f3)
     delta5 = -f0 / (
-        f1 + 0.5 * delta4 * f2 + 1 / 6 * delta4 ** 2 * f3 + 1 / 24 * delta4 ** 3 * f4
+            f1 + 0.5 * delta4 * f2 + 1 / 6 * delta4 ** 2 * f3 + 1 / 24 * delta4 ** 3 * f4
     )
 
     E += delta5
     nu = E_to_nu(E, ecc)
 
     return nu
+
 
 @jit
 def rv_pqw(k, p, ecc, nu):
@@ -128,7 +144,7 @@ def rv_pqw(k, p, ecc, nu):
     u_q = np.array([[0, 1, 0]]).T
     u_w = np.array([[0, 0, 1]]).T
 
-    r_pf = (p / (1 + ecc * cos(nu))) # length of r-vector (N,)
+    r_pf = (p / (1 + ecc * cos(nu)))  # length of r-vector (N,)
     r_p = r_pf * cos(nu)
     r_w = r_pf * sin(nu)
     r_q = np.zeros_like(nu)
@@ -141,3 +157,56 @@ def rv_pqw(k, p, ecc, nu):
     v = (u_p * v_p + u_q * v_w + u_w * v_q).T
 
     return r, v
+
+
+@njit
+def pqw_to_ijk_vectors(inc, raan, argp):
+    cos_argp = cos(argp)
+    cos_raan = cos(raan)
+    sin_argp = sin(argp)
+    sin_raan = sin(raan)
+    cos_inc = cos(inc)
+    sin_inc = sin(inc)
+
+    pi = cos_argp * cos_raan - sin_argp * sin_raan * cos_inc  # Eq. 11.32
+    pj = cos_argp * sin_raan + sin_argp * cos_raan * cos_inc  # Eq. 11.32
+    pk = sin_argp * sin_inc  # Eq. 11.32
+    qi = -sin_argp * cos_raan - cos_argp * sin_raan * cos_inc  # Eq. 11.32
+    qj = -sin_argp * sin_raan + cos_argp * cos_raan * cos_inc  # Eq. 11.32
+    qk = cos_argp * sin_inc  # Eq. 11.32
+    wi = sin_raan * sin_inc
+    wj = -cos_raan * sin_inc
+    wk = cos_inc
+
+    return pi, pj, pk, qi, qj, qk, wi, wj, wk
+
+
+@njit
+def pqw_to_eci(r, v, k, p, ecc, nu, pi, pj, pk, qi, qj, qk, wi, wj, wk):
+    # Position vectors
+    r_pqw_norm = p / (1 + ecc * cos(nu))
+    r_p = r_pqw_norm * cos(nu)
+    r_q = r_pqw_norm * sin(nu)
+    r_w = 0
+
+    r_x = r_p * pi + r_q * qi + r_w * wi
+    r_y = r_p * pj + r_q * qj + r_w * wj
+    r_z = r_p * pk + r_q * qk + r_w * wk
+
+    r[:, 0] = r_x
+    r[:, 1] = r_y
+    r[:, 2] = r_z
+
+    # Velocity vectors
+    v_pqw_norm = np.sqrt(k / p)
+    v_p = v_pqw_norm * -sin(nu)
+    v_q = v_pqw_norm * (ecc + cos(nu))
+    v_w = 0
+
+    v_x = v_p * pi + v_q * qi + v_w * wi
+    v_y = v_p * pj + v_q * qj + v_w * wj
+    v_z = v_p * pk + v_q * qk + v_w * wk
+
+    v[:, 0] = v_x
+    v[:, 1] = v_y
+    v[:, 2] = v_z
