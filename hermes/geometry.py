@@ -1,15 +1,38 @@
 import numpy as np
 from numba import jit
 from numpy.core.umath_tests import inner1d
+from astropy import time, units as u
 
 from hermes.util import norm_along_rows
+
+def slant_to_fov(slant, r, Rbody):
+    a = slant
+    b = r
+    c = Rbody
+    return np.arccos((c**2 - a**2 - b**2)/(-2*a*b))
+
+def elevation_to_slant(el, r, Rbody):
+    """ Computes the slant range from the elevation angle"""
+    beta = el + 90 * u.deg
+
+    b = r
+    c = Rbody
+
+    # Solutions of cosine formula: a^2 - 2*c*cos(theta)*a - b^2 + c^2 = 0
+    a1 = c * np.cos(beta) + np.sqrt(b ** 2 - c ** 2 * np.sin(beta) ** 2)
+    a2 = c * np.cos(beta) - np.sqrt(b ** 2 - c ** 2 * np.sin(beta) ** 2)
+
+    return np.maximum(a1, a2) # Todo: is this always the maximum?
 
 def fov_edge_range(r, theta, Rbody):
     """ Computes the range to the edge of the FOV circle"""
 
+    b = r
+    c = Rbody
+
     # Solutions of cosine formula: a^2 - 2*b*cos(theta)*a + b^2 - c^2 = 0
-    a1 = r*np.cos(theta) + np.sqrt(Rbody**2 - r**2*np.sin(theta)**2)
-    a2 = r*np.cos(theta) - np.sqrt(Rbody**2 - r**2*np.sin(theta)**2)
+    a1 = b*np.cos(theta) + np.sqrt(c**2 - b**2*np.sin(theta)**2)
+    a2 = b*np.cos(theta) - np.sqrt(c**2 - b**2*np.sin(theta)**2)
 
     return np.minimum(a1, a2) # Todo: is this always the minimum?
 

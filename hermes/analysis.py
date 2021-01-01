@@ -287,7 +287,7 @@ class LOSAnalysis(Analysis):
 
         from datetime import datetime
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        self.store = pd.HDFStore("%s_%s_%s.h5" % (self.scenario.name, self.name, timestamp))
+        self.store = pd.HDFStore("%s_%s_%s.h5" % (timestamp, self.scenario.name, self.name))
 
         # Reset storage
         self.contact_instances = {}
@@ -411,32 +411,10 @@ class LOSAnalysis(Analysis):
         self.generate_instances()
 
     def draw(self, figure):
-
-        color = "#01FF70"[1:]
-        color = tuple(float(int(color[i:i + 2], 16)) / 255.0 for i in (0, 2, 4))
-
-        x = np.array([0, 0])
-        y = np.array([0, 0])
-        z = np.array([0, 0])
-
-        self.mlab_points = mlab.plot3d(x, y, z, tube_radius=25., color=color, figure=figure)
+        pass
 
     def draw_update(self):
-
-        x = np.array([0, 0])
-        y = np.array([0, 0])
-        z = np.array([0, 0])
-
-        if len(self.current_access_instants) > 0:
-            x[0] = self.current_access_instants[0].obj_a_snap[0] / 1000
-            y[0] = self.current_access_instants[0].obj_a_snap[1] / 1000
-            z[0] = self.current_access_instants[0].obj_a_snap[2] / 1000
-
-            x[1] = self.current_access_instants[0].obj_b_snap[0] / 1000
-            y[1] = self.current_access_instants[0].obj_b_snap[1] / 1000
-            z[1] = self.current_access_instants[0].obj_b_snap[2] / 1000
-
-        self.mlab_points.mlab_source.trait_set(x=x, y=y, z=z)
+        pass
 
     def stop(self):
         self.store_instances()

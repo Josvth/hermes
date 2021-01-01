@@ -32,7 +32,7 @@ def _Telesat_00053():
                                     num_plane) * u.deg,
                                 epoch=J2017)
     set_polar.color = hex2rgb("#0074D9")  # Blue
-    #set_polar.set_fov(44.85 * u.deg)
+    set_polar.set_fov(58.15 * u.deg)
     set_polar.name = 'polar'
 
     # Orbital plane 21 - 36 & 37 - 67 (inclined orbits)
@@ -53,7 +53,7 @@ def _Telesat_00053():
                                   num_plane) * u.deg,
                               epoch=J2017)
     set_inc.color = hex2rgb("#FF4136")  # Red
-    #set_inc.set_fov(44.85 * u.deg)
+    set_inc.set_fov(52.03 * u.deg)
     set_inc.name = 'inclined'
 
     constellation = Constellation(name='Telesat')

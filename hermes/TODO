@@ -7,3 +7,5 @@
 - Specify time step by a TimeDelta
 - Move time instances from Scenario to Simulation ::grin::
 - Implement a better tree data structure (i.e. Anytree or Treelib)
+- Implement nice naming in analysis contact opportunities
+- Have the SatGroups take an .rr pointer to the positions in the top node (like in the analysis)
