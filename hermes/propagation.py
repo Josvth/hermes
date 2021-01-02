@@ -19,7 +19,7 @@ def secular_rates_J2(k, p, ecc, inc, raan, argp, nu, J2, Rbody):
     # From Howard, Curtis (eq 10.93b-d) or AE4874 (eq. 23.35) and AE4874 (eq. 23.27)
     draan = -3 / 2 * J2 * n * (Rbody / p) ** 2 * np.cos(inc)
     dargp = 3 / 2 * J2 * (n / 2) * (Rbody / p) ** 2 * (5 * cos(inc) ** 2 - 1)
-    dnu = n * (1 + 3 / 4 * J2 * (Rbody / p) ** 2 * (1 - 3 * cos(inc) ** 2))
+    dnu = n * (1 + 3 / 4 * J2 * (Rbody / a) ** 2 * (1 - ecc**2) ** (-3/2) * (3 * cos(inc) ** 2 - 1))
 
     return draan, dargp, dnu
 

@@ -12,6 +12,9 @@ def apply_report_formatting(x_in = 3.2, y_in = 2.4):
     ax.yaxis.label.set_size(8)
     ax.xaxis.label.set_size(8)
 
+    # if hasattr(ax, 'grid'):
+    #     ax.grid(linestyle=':', linewidth=0.1)
+
     if hasattr(ax, 'zaxis'):
         ax.zaxis.label.set_size(8)
 

@@ -33,10 +33,12 @@ scenario = Scenario(start, stop, step, Earth, name='Test')
 sat_400_51 = Satellite.circular(Earth.poli_body, 400 * u.km, inc=51.6 * u.deg, raan=0 * u.deg, arglat=0 * u.deg)
 sat_400_51.color = hex2rgb('#00ffff')
 sat_400_51.name = 'sat_400km_51deg'
+#sat_400_51.J2_perturbation = True
 
 sat_500_97 = Satellite.circular(Earth.poli_body, 500 * u.km, inc=97.5 * u.deg, raan=0 * u.deg, arglat=0 * u.deg)
 sat_500_97.color = hex2rgb('#00ffff')
 sat_500_97.name = 'sat_500km_97deg'
+#sat_500_97.J2_perturbation = True
 
 # And we add it to the scenario
 scenario.add_satellite(sat_400_51)
@@ -58,7 +60,7 @@ scenario.add_analysis(LOSAnalysis(scenario, sat_500_97, constellation))
 # Initialise the scenario
 scenario.initialise()
 
-simulation = Simulation(scenario, show_3d=True)
+simulation = Simulation(scenario, show_3d=False)
 simulation.run()
 
 
