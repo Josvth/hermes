@@ -10,11 +10,13 @@ from mayavi import mlab
 
 from abc import ABC, abstractmethod
 
-from hermes.geometry import line_intersects_sphere, point_inside_cone, point_inside_cone_audacy
+from hermes.geometry import line_intersects_sphere, point_inside_cone, point_inside_cone_audacy, spherical_to_cartesian
 from hermes.objects import Satellite
 
 
 class Analysis(ABC):
+
+    name = 'Unnamed-Analysis'
 
     def __init__(self):
         self.csv_name = None
@@ -369,8 +371,8 @@ class LOSAnalysis(Analysis):
 
                 contact_instance = {
                     'strand_name': strand_name,
-                    #'p': self.pass_number[i],
-                    #'n': self.instance_counters[i],
+                    # 'p': self.pass_number[i],
+                    # 'n': self.instance_counters[i],
                     'tof': tof_s,
                     'r_a_x': r_a_x, 'r_a_y': r_a_y, 'r_a_z': r_a_z,
                     'r_b_x': r_b_x, 'r_b_y': r_b_y, 'r_b_z': r_b_z,
@@ -436,3 +438,95 @@ class LOSAnalysis(Analysis):
         #
         # opportunities_df = pd.DataFrame(self.opportunities)
         # opportunities_df.to_pickle('test.pickle')
+
+
+class CoverageAnalysis(Analysis):
+    class CoverageAnalysisWriter(object):
+        store = None
+
+        def __init__(self, analysis, directory=None):
+            self.analysis = analysis
+            self.directory = directory
+
+            self.file_name = None
+            self.file_path = None
+
+        def _generate_file_name(self, analysis):
+            from datetime import datetime
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+            return '%s_%s.h5' % (timestamp, analysis.name)
+
+        def initialise(self):
+            self.file_name = self._generate_file_name(self.analysis)
+            self.file_path = self.directory + '/' + self.file_path if self.directory is not None else self.file_name
+            self.store = pd.HDFStore(self.file_path)
+
+        def store_coverage(self):
+            tof = self.analysis.scenario.state.tof_s
+            r_samp = self.analysis.r_samp
+            los = self.analysis.los.sum(axis=1) > 0
+
+            coverage_dict = {'tof': tof,
+                             'r_x': r_samp[:, 0], 'r_y': r_samp[:, 1], 'r_z': r_samp[:, 2],
+                             'los': los}
+
+            coverage_df = pd.DataFrame(coverage_dict)
+            self.store.append('coverage', coverage_df)
+
+        def flush(self):
+            self.store_coverage()
+
+    def __init__(self, scenario, sim_ob, name='COVAnalysis', altitude=500 * u.km, dtheta=2.5 * u.deg, dphi=2.5 * u.deg):
+        super().__init__()
+
+        self.name = name
+        self.scenario = scenario
+
+        self.ffov = None  # Field-of-views [rad]
+        self.R_body = scenario.state.attractor.poli_body.R_mean.to(u.m).value  # Radius of attractor [m]
+
+        self.shell_radius_m = self.R_body + altitude.to(u.m).value
+        self.sim_ob = sim_ob
+
+        # Generate sampling vectors
+        theta, phi = np.meshgrid(np.arange(0, np.pi + dtheta.to(u.rad).value, dtheta.to(u.rad).value),
+                                 np.arange(0, 2 * np.pi, dphi.to(u.rad).value))
+        x, y, z = spherical_to_cartesian(self.shell_radius_m, theta, phi)
+
+        self.r_samp = np.array([x.flatten(), y.flatten(), z.flatten()]).T
+
+    def generate_writer(self, *args, **kwargs):
+        return self.CoverageAnalysisWriter(self, *args, **kwargs)
+
+    def find_los(self):
+        rr_b = np.stack([sat.rr for sat in self.sim_ob])
+
+        # Map to arrays of size N = N_samp * N_ngso_s
+        rr_a = np.repeat(self.r_samp, len(rr_b), axis=0)
+        rr_b = np.tile(rr_b, (len(self.r_samp), 1))
+        ffov = np.tile(self.ffov, (len(self.r_samp),))
+
+        itsc = line_intersects_sphere(rr_a, rr_b, self.scenario.state.attractor.xyz, self.R_body)
+        insd = point_inside_cone(rr_a, rr_b, ffov)
+
+        self.los = insd * (1 - itsc) > 0
+        self.los = self.los.reshape((len(self.r_samp), len(self.sim_ob)))
+
+    def initialise(self):
+        # Generate a ndarray of FOVs
+        self.ffov = np.stack([s.fov.to(u.rad).value for s in self.sim_ob])
+
+        # Find access at initial time point
+        self.find_los()
+
+        super().initialise()
+
+    def run(self, t):
+        pass
+
+    def draw_update(self):
+        pass
+
+    def stop(self):
+        pass

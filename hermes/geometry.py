@@ -165,3 +165,12 @@ def line_intersects_sphere(pos_1, pos_2, pos_3, radius):
     #         isct[i] = dp <r
     #
     # return isct
+
+@jit
+def spherical_to_cartesian(R, theta, phi):
+
+    z = R * np.cos(theta)
+    y = R * np.sin(theta) * np.sin(phi)
+    x = R * np.sin(theta) * np.cos(phi)
+
+    return x, y, z
