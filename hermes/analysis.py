@@ -1,4 +1,5 @@
 import csv
+import os
 from builtins import property, object, enumerate, range
 
 import numpy as np
@@ -441,6 +442,7 @@ class LOSAnalysis(Analysis):
 
 
 class CoverageAnalysis(Analysis):
+
     class CoverageAnalysisWriter(object):
         store = None
 
@@ -459,17 +461,17 @@ class CoverageAnalysis(Analysis):
 
         def initialise(self):
             self.file_name = self._generate_file_name(self.analysis)
-            self.file_path = self.directory + '/' + self.file_path if self.directory is not None else self.file_name
+            self.file_path = self.directory + os.path.sep + self.file_name if self.directory is not None else self.file_name
             self.store = pd.HDFStore(self.file_path)
 
         def store_coverage(self):
             tof = self.analysis.scenario.state.tof_s
             r_samp = self.analysis.r_samp
-            los = self.analysis.los.sum(axis=1) > 0
+            num_los = self.analysis.los.sum(axis=1)
 
             coverage_dict = {'tof': tof,
                              'r_x': r_samp[:, 0], 'r_y': r_samp[:, 1], 'r_z': r_samp[:, 2],
-                             'los': los}
+                             'num_los': num_los}
 
             coverage_df = pd.DataFrame(coverage_dict)
             self.store.append('coverage', coverage_df)
@@ -477,13 +479,14 @@ class CoverageAnalysis(Analysis):
         def flush(self):
             self.store_coverage()
 
-    def __init__(self, scenario, sim_ob, name='COVAnalysis', altitude=500 * u.km, dtheta=2.5 * u.deg, dphi=2.5 * u.deg):
+    def __init__(self, scenario, sim_ob, name=None, altitude=500 * u.km, dtheta=2 * u.deg, dphi=2 * u.deg):
         super().__init__()
 
-        self.name = name
+        self.name = name if name is not None else "COVAnalysis-%dkm" % altitude.to(u.km).value
         self.scenario = scenario
+        self.altitude = altitude
 
-        self.ffov = None  # Field-of-views [rad]
+        self.ffov_rad = None  # Field-of-views [rad]
         self.R_body = scenario.state.attractor.poli_body.R_mean.to(u.m).value  # Radius of attractor [m]
 
         self.shell_radius_m = self.R_body + altitude.to(u.m).value
@@ -505,7 +508,7 @@ class CoverageAnalysis(Analysis):
         # Map to arrays of size N = N_samp * N_ngso_s
         rr_a = np.repeat(self.r_samp, len(rr_b), axis=0)
         rr_b = np.tile(rr_b, (len(self.r_samp), 1))
-        ffov = np.tile(self.ffov, (len(self.r_samp),))
+        ffov = np.tile(self.ffov_rad, (len(self.r_samp),))
 
         itsc = line_intersects_sphere(rr_a, rr_b, self.scenario.state.attractor.xyz, self.R_body)
         insd = point_inside_cone(rr_a, rr_b, ffov)
@@ -515,7 +518,7 @@ class CoverageAnalysis(Analysis):
 
     def initialise(self):
         # Generate a ndarray of FOVs
-        self.ffov = np.stack([s.fov.to(u.rad).value for s in self.sim_ob])
+        self.ffov_rad = np.stack([s.fov.to(u.rad).value for s in self.sim_ob])
 
         # Find access at initial time point
         self.find_los()
