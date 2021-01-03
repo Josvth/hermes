@@ -34,15 +34,24 @@ constellation = Telesat_00053
 scenario.add_satellite(constellation)
 
 # Add line-of-sight analysis
-#analysis = CoverageAnalysis(scenario, constellation, name='COVAnalysis_1300km', altitude=1300 * u.km)
-#analysis = CoverageAnalysis(scenario, constellation, name='COVAnalysis_1000km', altitude=1000 * u.km)
-analysis = CoverageAnalysis(scenario, constellation, name='COVAnalysis_400km', altitude=400 * u.km)
+analysis = CoverageAnalysis(scenario, constellation, altitude=1300 * u.km)
+scenario.add_analysis(analysis)
+
+analysis = CoverageAnalysis(scenario, constellation, altitude=1000 * u.km)
+scenario.add_analysis(analysis)
+
+analysis = CoverageAnalysis(scenario, constellation, altitude=500 * u.km)
+scenario.add_analysis(analysis)
+
+analysis = CoverageAnalysis(scenario, constellation, altitude=400 * u.km)
 scenario.add_analysis(analysis)
 
 # Initialise the scenario
 scenario.initialise()
-writer = analysis.generate_writer()
-writer.initialise()
-writer.flush()
+
+for analysis in scenario.state.analyses:
+    writer = analysis.generate_writer()
+    writer.initialise()
+    writer.flush()
 
 
