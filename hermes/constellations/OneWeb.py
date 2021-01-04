@@ -3,6 +3,8 @@ from hermes.objects import Satellite, Earth, Constellation, SatGroup, SatPlane
 import numpy as np
 from astropy import time, units as u
 
+from hermes.util import wrap, hex2rgb
+
 # Based off SAT-LOI-20160428-00041
 def _OneWeb_00041():
 
@@ -19,13 +21,13 @@ def _OneWeb_00041():
                           a=Earth.poli_body.R_mean + 1200 * u.km, ecc=0 * u.one, inc=87.9 * u.deg,
                           rraan=np.arange(0, n_planes) * 10.2 * u.deg,
                           aargp=np.repeat(0 * u.deg, n_planes),
-                          nnnu=np.split(np.mod(
+                          nnnu=np.split(wrap(np.mod(
                                      np.tile(np.arange(0, n_sats) * 9 * u.deg, (n_planes, 1)) +
-                                     np.tile(np.arange(0, n_planes) * 4.5 * u.deg, (n_sats, 1)).T, 360 * u.deg),
+                                     np.tile(np.arange(0, n_planes) * 4.5 * u.deg, (n_sats, 1)).T, 360 * u.deg)),
                                      n_planes)
                           )
-    set.set_color("#0074D9")  # Blue
-    set.set_fov(40.14 * u.deg)
+    set.color = hex2rgb("#0074D9")  # Blue
+    set.fov = 28.86 * u.deg
 
     constellation = Constellation()
     constellation.append(set)

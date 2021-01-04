@@ -3,6 +3,12 @@ from astropy import time, units as u
 from numba import jit
 from numpy import cos, sin, multiply, square, divide
 
+def wrap(angle):
+    """ Wraps an angle to (-pi, pi) or (-180, 180)"""
+    angle_rad = angle.to(u.rad).value
+    angle_rad = (angle_rad + np.pi) % (2 * np.pi) - np.pi
+    return (angle_rad * u.rad).to(angle.unit)
+
 def hex2rgb(color):
     color = color[1:]   # Strip hex sybol #
     return tuple(float(int(color[i:i + 2], 16)) / 255.0 for i in (0, 2, 4))
@@ -88,7 +94,6 @@ def calc_lmn(iinc, rraan, aargp):
     return ll1, mm1, nn1, ll2, mm2, nn2
 
 
-import numpy.ctypeslib as nc
 @jit
 def coe2xyz_fast(xyz, pp, eecc, ll1, mm1, nn1, ll2, mm2, nn2, nnu):
 

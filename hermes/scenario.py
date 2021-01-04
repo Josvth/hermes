@@ -2,6 +2,8 @@ from astropy import time, units as u
 
 from hermes.objects import SatGroup
 from hermes.util import generate_time_vector
+from hermes.visualisation import Visualisation3DGIL
+
 
 class Scenario(object):
 
@@ -93,6 +95,11 @@ class Scenario(object):
         self.propagate_to(t)
         self.analyze()
         return self.state
+
+    def visualise3D(self):
+        vis = Visualisation3DGIL(self)
+        vis.visualise(self.state)
+        return vis
 
     def stop(self):
         pass

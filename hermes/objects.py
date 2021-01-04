@@ -210,6 +210,7 @@ Earth = _EarthObject()
 
 class GroupNode(ABC):
     _color = hex2rgb('#00ffff')
+    _fov = 45 * u.deg
     parent = None
     name = 'node'
 
@@ -231,6 +232,14 @@ class GroupNode(ABC):
     @color.setter
     def color(self, color):
         self._color = color
+
+    @property
+    def fov(self):
+        return self._fov
+
+    @fov.setter
+    def fov(self, color):
+        self._fov = color
 
     def iter_all(self):
         yield self
@@ -254,7 +263,7 @@ class Satellite(Orbit, GroupNode):
     fov_3D_show = False
     fov_3D_opacity = 0.5
 
-    plane_3D_show = True
+    plane_3D_show = False
     trace_3D_show = False
     trace_3D_length = 10000
 
@@ -311,6 +320,8 @@ class SatGroup(GroupNode, MutableSequence):
         self.colors = []
 
         self.sat_points = None
+
+        self._fov = None
 
     def __len__(self):
         # Return length of whole tree
@@ -437,9 +448,11 @@ class SatGroup(GroupNode, MutableSequence):
             child.color = color
         self._color = color
 
-    def set_fov(self, fov):
-        for sat in self._children:
-            sat.fov = fov
+    @GroupNode.fov.setter
+    def fov(self, fov):
+        for child in self._children:
+            child.fov = fov
+        #self._fov = fov # A group doesn't have an fov only satellite have
 
     @classmethod
     @u.quantity_input(a=u.m, ecc=u.one, inc=u.rad, raan=u.rad, argp=u.rad, nu=u.rad)

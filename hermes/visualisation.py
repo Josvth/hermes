@@ -28,7 +28,7 @@ def draw_vector(figure, vector, origin=np.array([0, 0, 0]), m_data=None):
 
 
 def draw_satellite_fov(figure, satellite, m_data=None):
-    r = satellite.parent.r_of(satellite) * u.m.to(SCALE_UNIT)  # position vector in meters
+    r = satellite.rr * u.m.to(SCALE_UNIT)  # position vector in meters
     r_norm = np.linalg.norm(r)
 
     fov = satellite.fov.to(u.rad).value
@@ -242,11 +242,10 @@ def draw_satellites(satellites, m_data_list=None, figure=None):
                 n = n + 1
                 pass
         elif isinstance(ob, Satellite):
-            if not isinstance(ob.parent, SatPlane):
-                # If the satellite is not in a plane we draw its orbit traced (see update_satellite)
-                m_data = m_data_list[n] if len(m_data_list) > n else m_data_list.append(None)
-                m_data_list[n] = draw_satellite(figure, ob, m_data=m_data)
-                n = n + 1
+            # If the satellite is not in a plane we draw its orbit traced (see update_satellite)
+            m_data = m_data_list[n] if len(m_data_list) > n else m_data_list.append(None)
+            m_data_list[n] = draw_satellite(figure, ob, m_data=m_data)
+            n = n + 1
 
         else:
             print("Cannot draw: %s" % type(ob).__name__)

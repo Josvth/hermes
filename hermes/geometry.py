@@ -5,6 +5,12 @@ from astropy import time, units as u
 
 from hermes.util import norm_along_rows
 
+def body_angle_to_slant(psi, r, Rbody):
+    b = r
+    c = Rbody
+    alpha = psi
+    return np.sqrt(b**2 + c**2 - 2*b*c*np.cos(alpha))
+
 def slant_to_fov(slant, r, Rbody):
     a = slant
     b = r
