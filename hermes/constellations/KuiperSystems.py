@@ -4,6 +4,9 @@ import numpy as np
 from astropy import time, units as u
 
 # Based off SAT-LOA-20190704-00057
+from hermes.util import hex2rgb
+
+
 def _Kuiper_00057():
     J2020 = time.Time('J2020', scale='tt')
 
@@ -24,8 +27,8 @@ def _Kuiper_00057():
                                     np.tile(np.arange(0, np_630) * 360 / np_630 / ns_630 * 3 * u.deg, (ns_630, 1)).T, 360 * u.deg),
                                     np_630),
                               epoch=J2020)
-    set_630.set_color("#0074D9")  # Blue
-    set_630.set_fov(48.2 * u.deg)
+    set_630.color = hex2rgb("#0074D9")  # Blue
+    set_630.fov = 48.197 * u.deg
 
     # 610 km 42 degree shell
     # RAAN[0] = 0, delta_RAAN = 360 / 36
@@ -42,8 +45,8 @@ def _Kuiper_00057():
                                      np.tile(np.arange(0, np_610) * 360 / ns_610 / np_610 * 3 * u.deg, (ns_610, 1)).T, 360 * u.deg),
                                      np_610),
                               epoch=J2020)
-    set_610.set_color("#FF851B")  # Orange
-    set_610.set_fov(48.2 * u.deg)
+    set_610.color = hex2rgb("#FF851B")  # Orange
+    set_610.fov = 48.381 * u.deg
 
     # 590 km 33 degree shell
     # RAAN[0] = 0, delta_RAAN = 360 / 28
@@ -60,8 +63,8 @@ def _Kuiper_00057():
                                      np.tile(np.arange(0, np_590) * 360 / ns_590 / np_590 * u.deg, (ns_590, 1)).T, 360 * u.deg),
                                      np_590),
                               epoch=J2020)
-    set_590.set_color("#2ECC40")  # Green
-    set_590.set_fov(48.2 * u.deg)
+    set_590.color = hex2rgb("#2ECC40")  # Green
+    set_590.fov = 48.566 * u.deg
 
     constellation = Constellation()
     constellation.append(set_630)
