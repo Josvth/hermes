@@ -2,11 +2,9 @@ from hermes.objects import Satellite, Earth, Constellation, SatGroup, SatPlane
 
 import numpy as np
 from astropy import time, units as u
-
-# Based off SAT-LOA-20190704-00057
 from hermes.util import hex2rgb
 
-
+# Based off SAT-LOA-20190704-00057
 def _Kuiper_00057():
     J2020 = time.Time('J2020', scale='tt')
 

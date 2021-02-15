@@ -3,6 +3,8 @@ from hermes.objects import Satellite, Earth, Constellation, SatGroup, SatPlane
 import numpy as np
 from astropy import time, units as u
 
+from hermes.util import wrap, hex2rgb
+
 # Based off https://astrome.io/wp-content/uploads/2019/07/Astrome-YellowPaper.pdf
 def _Astrome():
 
@@ -16,8 +18,8 @@ def _Astrome():
                             np.tile(np.linspace(0, 360, n_sats) * u.deg, (n_planes, 1)) +
                             np.tile(np.arange(0, n_planes) * 1.818 * u.deg, (n_sats, 1)).T, 360 * u.deg),
                             n_planes))
-    set.set_color("#0074D9")
-    set.set_fov(37.00 * u.deg)
+    set.color = hex2rgb("#0074D9")
+    set.fov = 34.763 * u.deg
 
     constellation = Constellation()
     constellation.append(set)
