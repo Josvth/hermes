@@ -4,6 +4,9 @@ import numpy as np
 from astropy import time, units as u
 
 # Based off SAT-MOD-20190830-00087
+from hermes.util import hex2rgb
+
+
 def _SpaceX_00087():
     J2015 = time.Time('J2015', scale='tt')
 
@@ -24,8 +27,8 @@ def _SpaceX_00087():
                                     np.tile(np.arange(0, np_550_530) * 0 * u.deg, (ns_550_530, 1)).T, 360 * u.deg),
                                     np_550_530),
                                   epoch=J2015)
-    set_550_530.set_color("#0074D9")  # Blue
-    set_550_530.set_fov(44.85 * u.deg)
+    set_550_530.color = hex2rgb("#0074D9")  # Blue
+    set_550_530.fov = 44.85 * u.deg
 
     # Sat-LOA-20161115-00118
     # Orbital planes 33 to 64
@@ -45,8 +48,8 @@ def _SpaceX_00087():
                                      np.tile(np.arange(0, 105, 3.375) * u.deg, (ns_1110_538, 1)).T, 360 * u.deg),
                                      np_1110_538),
                                    epoch=J2015)
-    set_1110_538.set_color("#FF851B")  # Orange
-    set_1110_538.set_fov(40.72 * u.deg)
+    set_1110_538.color = hex2rgb("#FF851B")  # Orange
+    set_1110_538.fov = 40.72 * u.deg
 
     # Sat-LOA-20161115-00118
     # Orbital planes 65 to 72
@@ -65,8 +68,8 @@ def _SpaceX_00087():
                                      np.tile(np.arange(0, 55, 7.2) * u.deg, (ns_1130_740, 1)).T, 360 * u.deg),
                                      np_1130_740),
                                    epoch=J2015)
-    set_1130_740.set_color("#2ECC40")  # Green
-    set_1130_740.set_fov(40.59 * u.deg)
+    set_1130_740.color = hex2rgb("#2ECC40")  # Green
+    set_1130_740.fov = 40.59 * u.deg
 
     # Sat-LOA-20161115-00118
     # Orbital planes 73 to 78
@@ -85,8 +88,8 @@ def _SpaceX_00087():
                                      np.tile(np.arange(0, np_1325_700) * 0.8 * u.deg, (ns_1325_700, 1)).T, 360 * u.deg),
                                      np_1325_700),
                                    epoch=J2015)
-    set_1325_700.set_color("#B10DC9")  # Purple
-    set_1325_700.set_fov(39.67 * u.deg)
+    set_1325_700.color = hex2rgb("#B10DC9")  # Purple
+    set_1325_700.fov = 39.67 * u.deg
 
     # Sat-LOA-20161115-00118
     # Orbital planes 79 to 83
@@ -105,8 +108,8 @@ def _SpaceX_00087():
                                      np.tile(np.arange(0, np_1275_810) * 0.8 * u.deg, (ns_1275_810, 1)).T, 360 * u.deg),
                                      np_1275_810),
                                    epoch=J2015)
-    set_1275_810.set_color("#FF4136")  # Red
-    set_1275_810.set_fov(39.36 * u.deg)
+    set_1275_810.color = hex2rgb("#FF4136")  # Red
+    set_1275_810.fov = 39.36 * u.deg
 
     constellation = Constellation()
     constellation.append(set_550_530)
@@ -142,8 +145,8 @@ def _SpaceX_00037():
                                     np.tile(np.arange(0, np_550_530) * 8.8 * u.deg, (ns_550_530, 1)).T, 360 * u.deg),
                                     np_550_530),
                                   epoch=J2015)
-    set_550_530.set_color("#0074D9")  # Blue
-    set_550_530.set_fov(44.85 * u.deg)
+    set_550_530.color = hex2rgb("#0074D9")  # Blue
+    set_550_530.fov = 56.541 * u.deg
 
     # Shell 2
     # 540 km 53.2 degree
@@ -161,8 +164,8 @@ def _SpaceX_00037():
                                      np.tile(np.arange(0, np_540_532) * 12.35 * u.deg, (ns_540_532, 1)).T, 360 * u.deg),
                                      np_540_532),
                                   epoch=J2015)
-    set_540_532.set_color("#FF851B")  # Orange
-    set_540_532.set_fov(40.72 * u.deg)
+    set_540_532.color = hex2rgb("#FF851B")  # Orange
+    set_540_532.fov = 56.667 * u.deg
 
     # Shell 3
     # 570 km 70 degree
@@ -180,8 +183,8 @@ def _SpaceX_00037():
                                      np.tile(np.arange(0, np_570_70) * 7.65 * u.deg, (ns_570_70, 1)).T, 360 * u.deg),
                                      np_570_70),
                                  epoch=J2015)
-    set_570_70.set_color("#2ECC40")  # Green
-    set_570_70.set_fov(40.59 * u.deg)
+    set_570_70.color = hex2rgb("#2ECC40")  # Green
+    set_570_70.fov = 56.292 * u.deg
 
     # Shell 4
     # 560 km 97.6 degree
@@ -199,8 +202,8 @@ def _SpaceX_00037():
                                      np.tile(np.arange(0, np_560_976a) * 1.04 * u.deg, (ns_560_976a, 1)).T, 360 * u.deg),
                                      np_560_976a),
                                    epoch=J2015)
-    set_560_976a.set_color("#B10DC9")  # Purple
-    set_560_976a.set_fov(97.6 * u.deg)
+    set_560_976a.color = hex2rgb("#B10DC9")  # Purple
+    set_560_976a.fov = 56.417 * u.deg
 
     # Shell 5
     # 560 km 97.6 degree
@@ -218,8 +221,8 @@ def _SpaceX_00037():
                                      np.tile(np.arange(0, np_560_976b) * 0.275 * u.deg, (ns_560_976b, 1)).T, 360 * u.deg),
                                      np_560_976b),
                                    epoch=J2015)
-    set_560_976b.set_color("#FF4136")  # Red
-    set_560_976b.set_fov(97.6 * u.deg)
+    set_560_976b.color = hex2rgb("#FF4136")  # Red
+    set_560_976b.fov = 56.417 * u.deg
 
     constellation = Constellation()
     constellation.append(set_550_530)
