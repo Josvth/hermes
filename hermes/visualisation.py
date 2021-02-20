@@ -38,6 +38,9 @@ def draw_satellite_fov(figure, satellite, m_data=None):
     a = fov_edge_range(r_norm, fov, R_body)
     h_cone = a * np.cos(fov)
 
+    if np.isnan(h_cone):
+        h_cone = r_norm
+
     origin = r * (r_norm - h_cone) / r_norm
     tip = r - origin
 

@@ -229,6 +229,9 @@ class LOSAnalysis(Analysis):
     # Constants
     BUFFER_SIZE = 1000
 
+    # HACKS
+    audacy = False
+
     def __init__(self, scenario, obj_a, obj_b, name='LOSAnalysis'):
 
         self.scenario = scenario
@@ -326,7 +329,10 @@ class LOSAnalysis(Analysis):
             itsc = np.ones(len(self.obj_b))
 
         if self.check_fov:
-            insd = point_inside_cone(self.r_a, self.rr_b, self.ffov)
+            if self.audacy:
+                insd = point_inside_cone_audacy(self.r_a, self.rr_b, self.ffov)
+            else:
+                insd = point_inside_cone(self.r_a, self.rr_b, self.ffov)
         else:
             insd = np.ones(len(self.obj_b))
 
@@ -369,7 +375,6 @@ class LOSAnalysis(Analysis):
                 r_b_x, r_b_y, r_b_z = self.rr_b[i]  # Decompose because its easier to append in Pandas/HDF5/CSV
 
                 # Todo store velocities
-
                 contact_instance = {
                     'strand_name': strand_name,
                     # 'p': self.pass_number[i],

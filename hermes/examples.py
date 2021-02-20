@@ -4,7 +4,7 @@ import os
 def O3b_example():
 
     from hermes.simulation import Scenario
-    from hermes.constellations.O3b_00154 import O3b
+    from hermes.constellations.O3b import O3b
     from hermes.objects import Earth, Satellite
     from hermes.analysis import AccessAnalysis
 

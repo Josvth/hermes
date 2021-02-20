@@ -3,6 +3,8 @@ from hermes.objects import Satellite, Earth, Constellation, SatGroup, SatPlane
 import numpy as np
 from astropy import time, units as u
 
+from hermes.util import hex2rgb
+
 # Based off SAT-AMD-2017110900154
 def _O3b_00154():
     inc_plane1 = SatPlane.as_plane(
@@ -12,7 +14,9 @@ def _O3b_00154():
         argp=0 * u.deg,
         nnu=np.array([3.5, 75.5, 147.5, 219.5, 291.5]) * u.deg
     )
-    inc_plane1.set_color("#0074D9")
+    inc_plane1.color = hex2rgb("#0074D9")
+    inc_plane1.fov = 26.087 * u.deg
+
     equ_plane = SatPlane.as_plane(
         Earth.poli_body,
         a=Earth.poli_body.R_mean + 8062 * u.km, ecc=0 * u.one, inc=0 * u.deg,
@@ -20,17 +24,18 @@ def _O3b_00154():
         argp=0 * u.deg,
         nnu=np.linspace(0, 360, 32) * u.deg
     )
-    equ_plane.set_color("#FF4136")
-    equ_plane.set_fov(51.53 * u.deg)
+    equ_plane.color = hex2rgb("#FF4136")
+    equ_plane.fov = 26.087 * u.deg
 
     inc_plane2 = SatPlane.as_plane(
         Earth.poli_body,
         a=Earth.poli_body.R_mean + 8062 * u.km, ecc=0 * u.one, inc=70 * u.deg,
         raan=180 * u.deg,
         argp=0 * u.deg,
-        nnu=np.array([183.5, 225.5, 327.5, 111.5, 39.5]) * u.deg
+        nnu=np.array([183.5, 255.5, 327.5, 111.5, 39.5]) * u.deg
     )
-    inc_plane2.set_color("#0074D9")
+    inc_plane2.color = hex2rgb("#0074D9")
+    inc_plane2.fov = 26.087 * u.deg
 
     constellation = Constellation()
     constellation.append(inc_plane1)

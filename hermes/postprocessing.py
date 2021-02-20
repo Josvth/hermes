@@ -5,6 +5,14 @@ from tqdm import tqdm
 from astropy import units as u, time
 from astropy.coordinates import GCRS, CartesianRepresentation, ITRS, SphericalRepresentation
 
+
+def add_range(instances_df):
+    instances_df['d'] = np.sqrt((instances_df.r_a_x - instances_df.r_b_x)**2 +
+                                (instances_df.r_a_y - instances_df.r_b_y)**2 +
+                                (instances_df.r_a_z - instances_df.r_b_z)**2)
+
+    return instances_df
+
 def generate_pass_df(instance_df):
     starts = instance_df.groupby(['p', 'strand_name'], as_index = False).first(1)
     starts.index.name = 'p'
