@@ -243,6 +243,7 @@ class LOSAnalysis(Analysis):
         self.r_a = None  # This is a 'pointer' to the state vectors in the simulations SatGroup [m]
         self.v_a = None  # This is a 'pointer' to the state vectors in the simulations SatGroup [m]
         self.rr_b = None  # This is a 'pointer' to the state vectors in the simulations SatGroup [m]
+        self.vv_b = None  # This is a 'pointer' to the state vectors in the simulations SatGroup [m]
 
         self.name = name
 
@@ -312,6 +313,7 @@ class LOSAnalysis(Analysis):
         self.r_a = self.get_positions(self._obj_a_slice)[0, :]
         self.v_a = self.get_velocities(self._obj_a_slice)[0, :]
         self.rr_b = self.get_positions(self._obj_b_slice)
+        self.vv_b = self.get_velocities(self._obj_b_slice)
 
         # Find access at initial time point
         self.find_los()
@@ -379,6 +381,7 @@ class LOSAnalysis(Analysis):
                 r_a_x, r_a_y, r_a_z = self.r_a      # Decompose because its easier to append in Pandas/HDF5/CSV
                 v_a_x, v_a_y, v_a_z = self.v_a      # Decompose because its easier to append in Pandas/HDF5/CSV
                 r_b_x, r_b_y, r_b_z = self.rr_b[i]  # Decompose because its easier to append in Pandas/HDF5/CSV
+                v_b_x, v_b_y, v_b_z = self.vv_b[i]  # Decompose because its easier to append in Pandas/HDF5/CSV
 
                 # Todo store velocities
                 contact_instance = {
@@ -389,6 +392,7 @@ class LOSAnalysis(Analysis):
                     'r_a_x': r_a_x, 'r_a_y': r_a_y, 'r_a_z': r_a_z,
                     'v_a_x': r_a_x, 'v_a_y': v_a_y, 'v_a_z': v_a_z,
                     'r_b_x': r_b_x, 'r_b_y': r_b_y, 'r_b_z': r_b_z,
+                    'v_b_x': v_b_x, 'v_b_y': r_b_y, 'v_b_z': r_b_z,
                     'time': timestamp
                 }
 

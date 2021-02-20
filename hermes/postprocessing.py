@@ -5,8 +5,43 @@ from tqdm import tqdm
 from astropy import units as u, time
 from astropy.coordinates import GCRS, CartesianRepresentation, ITRS, SphericalRepresentation
 
+# Functions to quickly grab state-vectors as numpy arrays
+def get_r_a(instances_df):
+    return np.array([instances_df['r_a_x'].values, instances_df['r_a_y'].values, instances_df['r_a_z'].values]).T
+
+def get_v_a(instances_df):
+    return np.array([instances_df['v_a_x'].values, instances_df['v_a_y'].values, instances_df['v_a_z'].values]).T
+
+def get_rv_a(instances_df):
+    r = get_r_a(instances_df)
+    v = get_v_a(instances_df)
+    return r, v
+
+def get_r_b(instances_df):
+    return np.array([instances_df['r_b_x'].values, instances_df['r_b_y'].values, instances_df['r_b_z'].values]).T
+
+def get_v_b(instances_df):
+    return np.array([instances_df['v_b_x'].values, instances_df['v_b_y'].values, instances_df['v_b_z'].values]).T
+
+def get_rv_b(instances_df):
+    r = get_r_b(instances_df)
+    v = get_v_b(instances_df)
+    return r, v
 
 def add_range(instances_df):
+    """ Adds the range to the data-frame
+
+    Parameters
+    ----------
+    instances_df : pandas.DataFrame
+        A data frame with contact instances.
+
+    Returns
+    -------
+    instances_df
+        A copy of the original instances data frame with new 'd' column being the range.
+
+    """
     instances_df['d'] = np.sqrt((instances_df.r_a_x - instances_df.r_b_x)**2 +
                                 (instances_df.r_a_y - instances_df.r_b_y)**2 +
                                 (instances_df.r_a_z - instances_df.r_b_z)**2)
