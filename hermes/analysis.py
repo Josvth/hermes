@@ -241,6 +241,7 @@ class LOSAnalysis(Analysis):
         self.ffov = None  # Field-of-views [rad]
         self.R_body = scenario.state.attractor.poli_body.R_mean.to(u.m).value  # Radius of attractor [m]
         self.r_a = None  # This is a 'pointer' to the state vectors in the simulations SatGroup [m]
+        self.v_a = None  # This is a 'pointer' to the state vectors in the simulations SatGroup [m]
         self.rr_b = None  # This is a 'pointer' to the state vectors in the simulations SatGroup [m]
 
         self.name = name
@@ -286,6 +287,9 @@ class LOSAnalysis(Analysis):
     def get_positions(self, indices):
         return self.scenario.state.satellites.rr[indices]
 
+    def get_velocities(self, indices):
+        return self.scenario.state.satellites.vv[indices]
+
     def initialise(self):
 
         # Generate storage file
@@ -306,6 +310,7 @@ class LOSAnalysis(Analysis):
 
         # Grab the pointers to the satellite positions
         self.r_a = self.get_positions(self._obj_a_slice)[0, :]
+        self.v_a = self.get_velocities(self._obj_a_slice)[0, :]
         self.rr_b = self.get_positions(self._obj_b_slice)
 
         # Find access at initial time point
@@ -371,7 +376,8 @@ class LOSAnalysis(Analysis):
                 tof_s = self.scenario.state.tof_s
                 timestamp = str(self.scenario.state.time)
 
-                r_a_x, r_a_y, r_a_z = self.r_a  # Decompose because its easier to append in Pandas/HDF5/CSV
+                r_a_x, r_a_y, r_a_z = self.r_a      # Decompose because its easier to append in Pandas/HDF5/CSV
+                v_a_x, v_a_y, v_a_z = self.v_a      # Decompose because its easier to append in Pandas/HDF5/CSV
                 r_b_x, r_b_y, r_b_z = self.rr_b[i]  # Decompose because its easier to append in Pandas/HDF5/CSV
 
                 # Todo store velocities
@@ -381,6 +387,7 @@ class LOSAnalysis(Analysis):
                     # 'n': self.instance_counters[i],
                     'tof': tof_s,
                     'r_a_x': r_a_x, 'r_a_y': r_a_y, 'r_a_z': r_a_z,
+                    'v_a_x': r_a_x, 'v_a_y': v_a_y, 'v_a_z': v_a_z,
                     'r_b_x': r_b_x, 'r_b_y': r_b_y, 'r_b_z': r_b_z,
                     'time': timestamp
                 }
