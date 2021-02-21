@@ -1,6 +1,6 @@
 import numpy as np
 from astropy import time, units as u
-from numba import jit
+from numba import jit, njit, prange
 from numpy import cos, sin, multiply, square, divide
 
 def wrap(angle):
@@ -106,9 +106,20 @@ def coe2xyz_fast(xyz, pp, eecc, ll1, mm1, nn1, ll2, mm2, nn2, nnu):
     xyz[:, 1] = rr * (mm1 * cos_nnu + mm2 * sin_nnu)
     xyz[:, 2] = rr * (nn1 * cos_nnu + nn2 * sin_nnu)
 
-@jit
+@njit
 def norm_along_rows(x):
     return np.sum(np.abs(x)**2,axis=-1)**(1./2)
+
+
+#@njit(parallel=True)
+def row_cross(va1, va2):
+    """Computes the cross product of each row in a Nx3 vector array"""
+
+    va = np.zeros(va1.shape)
+    for i in prange(va1.shape[0]):
+        va[i,:] = np.cross(va1[i,:], va2[i,:])
+
+    return va
 
 
 def generate_time_vector(start, stop, delta):

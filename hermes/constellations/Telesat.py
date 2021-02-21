@@ -4,34 +4,6 @@ import numpy as np
 from astropy import time, units as u
 from hermes.util import hex2rgb
 
-def _Telesat_OLD():
-
-    n_pol_planes = 6
-    pol_set = SatGroup.as_set(Earth.poli_body,
-                            a=Earth.poli_body.R_mean + 1000 * u.km, ecc=0 * u.one, inc=99.5 * u.deg,
-                            rraan=np.array([0, 63.2, 94.8, 126.4, 158.0, 31.6]) * u.deg,
-                            aargp=np.repeat(0 * u.deg, n_pol_planes),
-                            nnnu=[np.arange(345, 0, -30) * u.deg] * n_pol_planes)
-    pol_set.color = hex2rgb("#0074D9")
-    pol_set.fov = 58.34 * u.deg
-
-    n_inc_planes = 5
-    inc_set = SatGroup.as_set(Earth.poli_body,
-                            a=Earth.poli_body.R_mean + 1248 * u.km, ecc=0 * u.one, inc=37.4 * u.deg,
-                            rraan=np.array([0, 36.0, 72.0, 108.0, 144.0]) * u.deg,
-                            aargp=np.repeat(0 * u.deg, n_inc_planes),
-                            nnnu=[np.arange(320, -10, -40) * u.deg] * n_inc_planes)
-    inc_set.color = hex2rgb("#FF4136")
-    inc_set.fov = 55.43 * u.deg
-
-    constellation = Constellation(name='Telesat')
-    constellation.append(pol_set)
-    constellation.append(inc_set)
-
-    return constellation
-
-Telesat_OLD = _Telesat_OLD()
-
 # Based off SAT-MPL-20200526-00053
 def _Telesat_00053():
 
