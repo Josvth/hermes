@@ -396,7 +396,7 @@ class SatGroup(GroupNode, MutableSequence):
             self.aargp[i] = s.argp.to(u.rad).value
             self.nnu0[i] = s.nu.to(u.rad).value
             self.rr[i] = s.r.to(u.m).value
-            self.vv[i] = s.r.to(u.m).value
+            self.vv[i] = s.v.to(u.m).value
 
             # Constants needed to calculate raan walk by J2 perturbation
             self.JJ2[i] = s.attractor.J2.value
