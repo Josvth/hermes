@@ -390,7 +390,7 @@ class LOSAnalysis(Analysis):
                     # 'n': self.instance_counters[i],
                     'tof': tof_s,
                     'r_a_x': r_a_x, 'r_a_y': r_a_y, 'r_a_z': r_a_z,
-                    'v_a_x': r_a_x, 'v_a_y': v_a_y, 'v_a_z': v_a_z,
+                    'v_a_x': v_a_x, 'v_a_y': v_a_y, 'v_a_z': v_a_z,
                     'r_b_x': r_b_x, 'r_b_y': r_b_y, 'r_b_z': r_b_z,
                     'v_b_x': v_b_x, 'v_b_y': r_b_y, 'v_b_z': r_b_z,
                     'time': timestamp

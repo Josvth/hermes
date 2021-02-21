@@ -396,7 +396,7 @@ class SatGroup(GroupNode, MutableSequence):
             self.aargp[i] = s.argp.to(u.rad).value
             self.nnu0[i] = s.nu.to(u.rad).value
             self.rr[i] = s.r.to(u.m).value
-            self.vv[i] = s.v.to(u.m).value
+            self.vv[i] = s.v.to(u.m / u.s).value
 
             # Constants needed to calculate raan walk by J2 perturbation
             self.JJ2[i] = s.attractor.J2.value
@@ -440,6 +440,7 @@ class SatGroup(GroupNode, MutableSequence):
         #coe2xyz_fast(self.rr, self.pp, self.eecc, self.ll1, self.mm1, self.nn1, self.ll2, self.mm2, self.nn2, nnu)
 
         pqw_to_eci(self.rr, self.vv, self.kk, self.pp, self.eecc, nnu, ppi, ppj, ppk, qqi, qqj, qqk, wwi, wwj, wwk)
+        pass
 
     # Satellite mutations
     @GroupNode.color.setter
