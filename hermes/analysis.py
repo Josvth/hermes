@@ -383,7 +383,6 @@ class LOSAnalysis(Analysis):
                 r_b_x, r_b_y, r_b_z = self.rr_b[i]  # Decompose because its easier to append in Pandas/HDF5/CSV
                 v_b_x, v_b_y, v_b_z = self.vv_b[i]  # Decompose because its easier to append in Pandas/HDF5/CSV
 
-                # Todo store velocities
                 contact_instance = {
                     'strand_name': strand_name,
                     # 'p': self.pass_number[i],
@@ -392,7 +391,7 @@ class LOSAnalysis(Analysis):
                     'r_a_x': r_a_x, 'r_a_y': r_a_y, 'r_a_z': r_a_z,
                     'v_a_x': v_a_x, 'v_a_y': v_a_y, 'v_a_z': v_a_z,
                     'r_b_x': r_b_x, 'r_b_y': r_b_y, 'r_b_z': r_b_z,
-                    'v_b_x': v_b_x, 'v_b_y': r_b_y, 'v_b_z': r_b_z,
+                    'v_b_x': v_b_x, 'v_b_y': v_b_y, 'v_b_z': v_b_z,
                     'time': timestamp
                 }
 
