@@ -69,8 +69,6 @@ def add_sff_2(instances_df):
     r_a, v_a = get_rv_a(instances_df)
     r_b = get_r_b(instances_df)
 
-    xyz_eci = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
-
     # SFF in ECIF (attitude determination step)
     # Pointing of satelite in ecif (x - towards velocity, z - towards zenith, y = cross(x, -z)
     x_sff_in_ecif = v_a / np.linalg.norm(v_a, axis=1)[:, np.newaxis]
