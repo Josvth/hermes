@@ -208,6 +208,8 @@ class AccessAnalysis(Analysis):
 
 
 class LOSAnalysis(Analysis):
+    #Todo implement writer interface like coverage analysis
+    
     # Settings
     check_block = True
     check_fov = True
@@ -246,6 +248,7 @@ class LOSAnalysis(Analysis):
         self.vv_b = None  # This is a 'pointer' to the state vectors in the simulations SatGroup [m]
 
         self.name = name
+        self.hdf_name = []
 
         super().__init__()
 
@@ -298,7 +301,9 @@ class LOSAnalysis(Analysis):
 
         from datetime import datetime
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        self.store = pd.HDFStore("%s_%s_%s.h5" % (timestamp, self.scenario.name, self.name))
+        self.hdf_name = "%s_%s_%s.h5" % (timestamp, self.scenario.name, self.name)
+
+        self.store = pd.HDFStore(self.hdf_name)
 
         # Reset storage
         self.contact_instances = {}
