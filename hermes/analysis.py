@@ -209,7 +209,7 @@ class AccessAnalysis(Analysis):
 
 class LOSAnalysis(Analysis):
     #Todo implement writer interface like coverage analysis
-    
+
     # Settings
     check_block = True
     check_fov = True

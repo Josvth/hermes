@@ -62,6 +62,9 @@ class Scenario(object):
             an.run(self.state)
 
     ## Simulation
+    def initialize(self):
+        self.initialise()
+
     def initialise(self):
 
         print("Initializing attractor")

@@ -13,6 +13,7 @@ from tqdm import tqdm
 parser = argparse.ArgumentParser(description='Turn stack of pngs into an avi movie.')
 parser.add_argument('-d', type=str, help='Directory of PNGs')
 parser.add_argument('-n', type=str, default='movie.avi', help='Name of movie')
+parser.add_argument('-f', type=int, default=30, help='FPS')
 
 args = parser.parse_args()
 
@@ -25,7 +26,7 @@ for filename in tqdm(glob.glob(args.d + '/*.png')):
 
     fourcc = cv2.VideoWriter_fourcc('M','P','E','G')
     #fourcc = cv2.VideoWriter_fourcc('X','2','6','4')
-    out = cv2.VideoWriter(args.n, fourcc, frameSize=size, fps=60)
+    out = cv2.VideoWriter(args.n, fourcc, frameSize=size, fps=30)
 
     for i in range(len(img_array)):
         out.write(img_array[i])

@@ -176,6 +176,7 @@ def generate_pass_df(instance_df):
     pass_df['duration'] = pass_df['end_tof'] - pass_df['start_tof']
 
     pass_df['r_b_norm'] = np.sqrt(pass_df['r_b_x'] ** 2 + pass_df['r_b_y'] ** 2 + pass_df['r_b_z'] ** 2)
+    pass_df['tof'] = pass_df['start_tof']
 
     pass_df = add_latlon(pass_df)
 
